@@ -1,0 +1,11 @@
+make boring word list into a text file
+save guild settings to file
+add support for no-cooldown lgx channel
+allow some commands to be used by plebs -- "protected" commands
+reddit data set
+add support for no-ping user data loading/checking
+gif responses?
+simming user should update their data to recent
+ignore one word inquiries?
+see if we can modify the smart response to not necessarily start with the seed word (make the bot extend the markov model and override the method)
+"add" command to add a dataset to existing set -- update status too
