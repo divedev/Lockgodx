@@ -3,8 +3,6 @@ import os
 import random
 import re
 
-filter_words = open('filter.txt').read()
-
 
 def remove_url(text):
     return re.sub("https?:\/\/.*[\r\n]*", "", text)
@@ -18,7 +16,7 @@ def remove_mentions(text):
 def remove_special(text):
     chars = ['â', '€', '™', '‰', 'ð', 'Ÿ', '¤', '¡', 'š', '~', '˜', 'Γ', 'Ç', 'Ö', 'ª',
              '¥', '£', '≡', 'ƒ', 'Æ', '¬', 'Å', '┐', 'é', 'Ñ', 'ö', 'ÿ', '¢', '┬', '»', 'π',
-             'ä']
+             'ä', 'ñ', 'í']
 
     for char in chars:
         text = text.replace(char, '')

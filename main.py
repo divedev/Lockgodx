@@ -1,8 +1,7 @@
+import discord
 import os
 import random
 import time
-
-import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -39,7 +38,7 @@ async def on_message(message):
     if (message.author == client.user) or (message.type != discord.MessageType.default):
         return
     # respond to commands
-    elif message.content.startswith(cmd_prefix) & can_command(message.author):
+    elif message.content.startswith(cmd_prefix):
         await client.process_commands(message)
         return
 
@@ -84,18 +83,6 @@ async def on_message(message):
 
             bot.msgs_waited = 0 # reset the anti-spam message counter to 0
             await message.channel.send(output)
-
-
-def can_command(user):
-    author_roles = user.roles
-    perms = [role.permissions for role in author_roles]
-    can_ban = False
-
-    for perm in perms:
-        if perm.ban_members:
-            can_ban = True
-
-    return can_ban
 
 
 def is_warlock(author):
