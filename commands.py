@@ -151,10 +151,14 @@ class Commands(commands.Cog, name='Commands'):
     )
     @can_ban()
     async def load(self, ctx, arg=None):
+        bot = self.bots[ctx.guild.id]
+
         if arg is None:
             arg = 'default'
 
-        if self.bots[ctx.guild.id].model.load_model(model_name=arg) is not None:
+        bot.reset()
+        bot.current_data_set = arg
+        if bot.model.load_model(model_name=arg) is not None:
             await ctx.send(f'Model \"{arg}\" loaded.')
         else:
             await ctx.send('Failed to load model.')

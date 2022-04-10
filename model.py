@@ -1,4 +1,5 @@
 import random
+import sys
 
 import markovify
 
@@ -37,9 +38,12 @@ class Model:
 
     def update_model(self, text):
         try:
-            new_model = markovify.Text(text, state_size=self.generator.state_size, well_formed=False)
-            combined_model = markovify.combine(models=[self.generator, new_model])
-            self.generator = combined_model
+            self.generator = markovify.combine(models=[self.generator,
+                                                       markovify.Text(text,
+                                                                      state_size=self.generator.state_size,
+                                                                      well_formed=False,
+                                                                      retain_original=False
+                                                                      )])
         except:
             pass
 
@@ -60,8 +64,10 @@ class Model:
             model_name = 'default'
 
         try:
-            model_json = open(f'{self.root_dir}{model_name}.json').read()
-            self.generator = markovify.Text.from_json(model_json)
+            with open(f'{self.root_dir}{model_name}.json') as f:
+                model_json = f.read()
+                self.generator = markovify.Text.from_json(model_json)
+                self.state_size = self.generator.state_size
             return 1
         except:
             return None

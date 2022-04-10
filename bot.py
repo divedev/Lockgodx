@@ -132,7 +132,7 @@ class Bot:
         status = f'**Enabled**: {self.enabled}\n' \
                  f'**Learning**: {self.learn}\n' \
                  f'**Warlock-only**: {self.warlock_only}\n' \
-                 f'**Sentences parsed**: {len(self.model.generator.parsed_sentences)}\n' \
+                 f'**Model size**: {len(self.model.generator.chain.model)}\n' \
                  f'**Chain**: {self.model.state_size}\n' \
                  f'**Data set**: {self.current_data_set}\n' \
                  f'**Mention reply cooldown**: {self.get_remaining_cooldown(kind="mention", string=True)} of {math.floor(self.mention_wait)}m\n' \

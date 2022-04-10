@@ -77,12 +77,12 @@ def add_suffix(text):
     suffix = ''
 
     if random.random() * 100 > 85:
-        suffix = f'{suffix} {leads[random.randrange(0, len(leads))]}'
+        suffix = f'{suffix} {random.choice(leads)}'
 
     if random.random() * 100 > 75:
-        suffix = f'{suffix} {laughs[random.randrange(0, len(laughs))]}'
+        suffix = f'{suffix} {random.choice(laughs)}'
         if random.random() * 100 > 80:
-            suffix = f'{suffix} {insults[random.randrange(0, len(insults))]}'
+            suffix = f'{suffix} {random.choice(insults)}'
 
     return text + suffix
 
