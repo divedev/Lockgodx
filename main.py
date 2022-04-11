@@ -19,6 +19,8 @@ client = discord.ext.commands.Bot(command_prefix=cmd_prefix, intents=intents)
 
 bots = {}
 
+restricted_roles = ['Vending Machine', 'Vanilla Warrior']
+
 
 @client.event
 async def on_ready():
@@ -42,10 +44,10 @@ async def on_message(message):
         await client.process_commands(message)
         return
 
-    # if the message was posted in the bot's set channel, log it
+    # if the message was posted in the bot's set channel, log it -- otherwise ignore it
     if message.channel.id == bot.channel_id:
         # if bot is set to warlocks only and the message is sent from a non-warlock, do not train. else train
-        if bot.warlock_only & (not is_warlock(message.author)):
+        if bot.restricted & (not is_permitted(message.author)):
             return
         else:
             if len(bot.previous_messages) >= 10:
@@ -58,23 +60,27 @@ async def on_message(message):
 
     # respond to mentions if ready
     if client.user in message.mentions:
-
-        if bot.ready_for_mention:
+        # check if there is an outstanding cooldown for the user
+        if message.author.id in bot.user_mention_times.keys():
+            # check if the cooldown time has elapsed
+            if cooldown_check(bot.user_mention_times[message.author.id], bot.mention_wait):
+                async with message.channel.typing():
+                    take = bot.generate_take(message=message, trigger_icd=True)
+                    await message.reply(take)
+                    return
+            # do not reply if user is on cooldown
+            else:
+                return
+        else:
             async with message.channel.typing():
-                bot.time_of_mention = time.time()
-
-                bot.ready_for_mention = False
-
-                take = bot.generate_take(message=message)
+                take = bot.generate_take(message=message, trigger_icd=True)
                 await message.reply(take)
                 return
 
     # post randomly if ready
-    if bot.ready_for_random:
+    if cooldown_check(bot.time_of_random, bot.random_wait):
         async with message.channel.typing():
             bot.time_of_random = time.time()
-
-            bot.ready_for_random = False
 
             if random.random() * 100 > bot.rant_chance:
                 output = bot.generate_take(None, trigger_icd=True)
@@ -85,9 +91,13 @@ async def on_message(message):
             await message.channel.send(output)
 
 
-def is_warlock(author):
+def is_permitted(author):
     roles = author.roles
-    return not any(role.name in ['Vending Machine', 'Vanilla Warrior'] for role in roles)
+    return not any(role.name in restricted_roles for role in roles)
+
+
+def cooldown_check(time_of_cooldown, cooldown_length):
+    return (time.time() - time_of_cooldown) > cooldown_length*60
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))

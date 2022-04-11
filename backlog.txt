@@ -9,3 +9,4 @@ ignore one word inquiries?
 see if we can modify the smart response to not necessarily start with the seed word (make the bot extend the markov model and override the method)
 "add" command to add a dataset to existing set -- update status too
 personal cd on mention reply
+make his seed word based on the frequency of recently used words

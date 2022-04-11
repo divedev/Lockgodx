@@ -52,7 +52,7 @@ class Commands(commands.Cog, name='Commands'):
     async def take(self, ctx):
         if self.bots[ctx.guild.id].channel_id != '':
             async with ctx.typing():
-                await ctx.send(self.bots[ctx.guild.id].generate_take(None))
+                await ctx.send(self.bots[ctx.guild.id].generate_take(message=None))
         else:
             await ctx.send('Must set an active channel first')
 
@@ -284,13 +284,13 @@ class Commands(commands.Cog, name='Commands'):
     @can_ban()
     async def lock_only(self, ctx, arg=None):
         if arg is None:
-            self.bots[ctx.guild.id].warlock_only = not self.bots[ctx.guild.id].warlock_only
+            self.bots[ctx.guild.id].restricted = not self.bots[ctx.guild.id].restricted
         elif arg.lower() == 'true':
-            self.bots[ctx.guild.id].warlock_only = True
+            self.bots[ctx.guild.id].restricted = True
         elif arg.lower() == 'false':
-            self.bots[ctx.guild.id].warlock_only = False
+            self.bots[ctx.guild.id].restricted = False
 
-        await ctx.send(f'Learning from warlocks only: {self.bots[ctx.guild.id].warlock_only}')
+        await ctx.send(f'Learning from warlocks only: {self.bots[ctx.guild.id].restricted}')
 
     @lock_only.error
     async def lock_only_error(self, ctx, error):
@@ -302,13 +302,13 @@ class Commands(commands.Cog, name='Commands'):
         brief='Prints remaining message cooldowns'
     )
     async def cd(self, ctx):
-        random_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(kind="random", string=True)
+        random_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(string=True)
         random_cd = format.time_to_text(minutes=self.bots[ctx.guild.id].random_wait)
-        mention_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(kind="mention", string=True)
+        mention_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(author=ctx.author, string=True)
         mention_cd = format.time_to_text(minutes=self.bots[ctx.guild.id].mention_wait)
 
         random_cd_text = f'Random post cd: {random_cd_remaining} of {random_cd}'
-        mention_cd_text = f'Mention reply cd: {mention_cd_remaining} of {mention_cd}'
+        mention_cd_text = f'Mention reply cd ({ctx.author.name}): {mention_cd_remaining} of {mention_cd}'
 
         await ctx.send(f'{random_cd_text}\n{mention_cd_text}')
 
@@ -325,9 +325,9 @@ class Commands(commands.Cog, name='Commands'):
         channel = self.client.get_channel(self.bots[ctx.guild.id].channel_id)
 
         if channel is not None:
-            status_text = f'LGX STATUS\n\n**Active channel**: {channel.mention}\n' + str(self.bots[ctx.guild.id])
+            status_text = f'LGX STATUS\n\n**Active channel**: {channel.mention}\n' + self.bots[ctx.guild.id].status(ctx.author)
         else:
-            status_text = f'LGX STATUS\n\n**Active channel**: none\n' + str(self.bots[ctx.guild.id])
+            status_text = f'LGX STATUS\n\n**Active channel**: none\n' + self.bots[ctx.guild.id].status(ctx.author)
         await ctx.reply(status_text)
 
     @status.error

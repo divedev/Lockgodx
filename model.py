@@ -1,7 +1,6 @@
+import markovify
 import random
 import sys
-
-import markovify
 
 import format
 
@@ -38,12 +37,9 @@ class Model:
 
     def update_model(self, text):
         try:
-            self.generator = markovify.combine(models=[self.generator,
-                                                       markovify.Text(text,
-                                                                      state_size=self.generator.state_size,
-                                                                      well_formed=False,
-                                                                      retain_original=False
-                                                                      )])
+            new_model = markovify.Text(text, state_size=self.generator.state_size, well_formed=False)
+            self.generator = markovify.combine(models=[self.generator, new_model])
+
         except:
             pass
 
