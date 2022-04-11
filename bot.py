@@ -27,13 +27,11 @@ class Bot:
 
         self.enabled = True
         self.learn = True
-        self.warlock_only = False
+        self.restricted = False
         self.training_root_dir = 'train'
         self.current_data_set = 'none'
 
-        self.ready_for_mention = True
-        self.time_of_mention = time.time() - self.mention_wait*60
-        self.ready_for_random = True
+        self.user_mention_times = {}
         self.time_of_random = time.time() - self.random_wait*60
         self.msgs_waited = 0
         self.previous_messages = []
@@ -43,21 +41,26 @@ class Bot:
         if (self.channel_id == '') | (not self.enabled):
             return
         else:
+            # reset cooldowns
             if trigger_icd:
                 if message is None:
-                    self.ready_for_random = False
+                    self.time_of_random = time.time()
                 else:
-                    self.ready_for_mention = False
+                    self.user_mention_times[message.author.id] = time.time()
 
             if message is None:
+                # probabilistically pick a random word from recent conversation to seed a take
                 if random.random() < 0.8 and (len(self.previous_messages)>5):
                     seed_text = random.choice([msg for msg in self.previous_messages[4:] if len(msg.split(' ')) > 5])
                     take_text = self.model.make_sentence(tries=50, message=seed_text)
                 else:
                     take_text = self.model.make_sentence(tries=50)
+
                 take_text = self.ensure_unique(format.text_cleaner(take_text))
             else:
+                # seed the take with the message content
                 take_text = self.model.make_sentence(tries=50, message=message.content)
+                take_text = self.ensure_unique(format.text_cleaner(take_text), message=message.content)
 
             self.log_take(take_text)
 
@@ -103,9 +106,6 @@ class Bot:
             if rant != '':
                 rant = format.add_suffix(rant)
 
-                if trigger_icd:
-                    self.ready_for_random = False
-
                 return rant
             else:
                 pass
@@ -116,27 +116,27 @@ class Bot:
 
         self.previous_takes.append(text)
 
-    def ensure_unique(self, text, max_tries=20, reply_word=None):
+    def ensure_unique(self, text, max_tries=20, message=None):
         # do not re-use previous takes
         tries = 0
         while (text in self.previous_takes) & (tries < max_tries):
-            if reply_word is None:
+            if message is None:
                 text = self.model.make_sentence()
             else:
-                text = self.model.make_sentence(message=reply_word)
+                text = self.model.make_sentence(message=message)
             tries += 1
 
         return text
 
-    def __str__(self):
+    def status(self, author):
         status = f'**Enabled**: {self.enabled}\n' \
                  f'**Learning**: {self.learn}\n' \
-                 f'**Warlock-only**: {self.warlock_only}\n' \
-                 f'**Model size**: {len(self.model.generator.chain.model)}\n' \
+                 f'**Warlock-only**: {self.restricted}\n' \
+                 f'**Parsed sentences**: {len(self.model.generator.parsed_sentences)}\n' \
                  f'**Chain**: {self.model.state_size}\n' \
                  f'**Data set**: {self.current_data_set}\n' \
-                 f'**Mention reply cooldown**: {self.get_remaining_cooldown(kind="mention", string=True)} of {math.floor(self.mention_wait)}m\n' \
-                 f'**Random take cooldown**: {self.get_remaining_cooldown(kind="random", string=True)} of {math.floor(self.random_wait)}m\n' \
+                 f'**Mention reply cooldown** ({author.name}): {self.get_remaining_cooldown(author=author, string=True)} of {math.floor(self.mention_wait)}m\n' \
+                 f'**Random take cooldown**: {self.get_remaining_cooldown(string=True)} of {math.floor(self.random_wait)}m\n' \
                  f'**Rant chance**: {self.rant_chance}%\n' \
                  f'**Rant size**: {self.rant_size}\n'
 
@@ -203,16 +203,6 @@ class Bot:
         # set readiness flags
         self.can_generate_unique_takes = self.test_take_readiness()
 
-        enough_time_elapsed = (time.time() - self.time_of_mention) >= self.mention_wait * 60
-        if enough_time_elapsed & self.can_generate_unique_takes:
-            self.ready_for_mention = True
-
-        # have some additional anti-spam checks for random posting
-        enough_messages_since_last_take = self.msgs_waited >= self.msgs_wait
-        enough_time_elapsed = (time.time() - self.time_of_random) >= self.random_wait * 60
-        if all((enough_time_elapsed, self.can_generate_unique_takes, enough_messages_since_last_take)):
-            self.ready_for_random = True
-
     # if the model can spit out test_size unique takes, its model is "ready". once readiness is determined, do not check
     # again unless reset
     def test_take_readiness(self, test_size=15):
@@ -224,13 +214,13 @@ class Bot:
         else:
             return True
 
-    def get_remaining_cooldown(self, kind, string=False):
-        if kind == 'random':
+    def get_remaining_cooldown(self, author=None, string=False):
+        if author is None:
             sec_remaining = max(0, (self.time_of_random + self.random_wait*60) - time.time())
-        elif kind == 'mention':
-            sec_remaining = max(0, (self.time_of_mention + self.mention_wait*60) - time.time())
+        elif author.id in self.user_mention_times.keys():
+            sec_remaining = max(0, (self.user_mention_times[author.id] + self.mention_wait * 60) - time.time())
         else:
-            return
+            sec_remaining = 0
 
         ret = math.floor(sec_remaining)
 
