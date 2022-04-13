@@ -75,7 +75,7 @@ async def on_message(message):
             # check if the cooldown time has elapsed
             if cooldown_check(bot.user_mention_times[message.author.id], bot.mention_wait):
                 async with message.channel.typing():
-                    if (random.random() <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
+                    if (random.random()*100 <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
                         output = bot.generate_gif(seed=message.content)
                     else:
                         output = bot.generate_take(message=message)
