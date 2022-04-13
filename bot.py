@@ -64,7 +64,9 @@ class Bot:
                 take_text = self.ensure_unique(format.text_cleaner(take_text))
             else:
                 # seed the take with the message content
-                take_text = self.model.make_sentence(tries=50, message=message.content)
+                take_text = self.model.make_sentence(tries=50,
+                                                     message=message.content,
+                                                     smart_eligible=self.enough_unique_words(message.content))
                 take_text = self.ensure_unique(format.text_cleaner(take_text), message=message.content)
 
             self.log_take(take_text)
@@ -73,7 +75,7 @@ class Bot:
 
             if message is not None:
                 # sometimes add "because" to the beginning, if it's a "why" question
-                if ('why' in message.content.split(' ')) & (random.random() < 0.8) :
+                if ('why' in message.content.split(' ')) and (random.random() < 0.8):
                     pre = random.choice(['because', 'Because', 'bc'])
                     take_text = f'{pre} {take_text}'
 
@@ -284,3 +286,7 @@ class Bot:
             enabled = 'none'
 
         return enabled
+
+    def enough_unique_words(self, message, min_unique_words=5):
+        word_set = set(message.split(' '))
+        return len(word_set) > min_unique_words
