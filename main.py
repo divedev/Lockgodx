@@ -36,8 +36,8 @@ async def on_message(message):
     guild_id = message.guild.id
     bot = bots[guild_id]
 
-    # do not respond to own messages or pins
-    if (message.author == client.user) or (message.type != discord.MessageType.default):
+    # do not respond to own messages, pins, or messages from unpermitted roles
+    if (message.author == client.user) or (message.type != discord.MessageType.default) or not is_permitted(message.author):
         return
     # respond to commands
     elif message.content.startswith(cmd_prefix):

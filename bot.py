@@ -20,12 +20,15 @@ class Bot:
         self.mention_wait = 2
         self.rant_size = 10
         self.rant_chance = 5
+        self.gif_chance = 1
 
         self.can_generate_unique_takes = False
         self.max_previous_takes = 20
         self.previous_takes = []
 
-        self.enabled = True
+        self.takes_enabled = True
+        self.replies_enabled = True
+        self.gifs_enabled = True
         self.learn = True
         self.restricted = False
         self.training_root_dir = 'train'
@@ -37,22 +40,24 @@ class Bot:
         self.previous_messages = []
 
     def generate_take(self, message=None, trigger_icd=False):
-        # do not post if the channel hasn't been set or if the bot has been manually disabled
-        if (self.channel_id == '') | (not self.enabled):
+        # do not generate take if:
+        # 1. channel is not set
+        # 2. a random take is being requested, but random takes are disabled
+        # 3. a reply is being requested, but repies are disabled
+        if (self.channel_id == '') \
+                or ((message is None) and (not self.takes_enabled)) \
+                or ((message is not None) and (not self.replies_enabled)):
             return
         else:
-            # reset cooldowns
-            if trigger_icd:
-                if message is None:
-                    self.time_of_random = time.time()
-                else:
-                    self.user_mention_times[message.author.id] = time.time()
-
             if message is None:
                 # probabilistically pick a random word from recent conversation to seed a take
                 if random.random() < 0.8 and (len(self.previous_messages)>5):
-                    seed_text = random.choice([msg for msg in self.previous_messages[4:] if len(msg.split(' ')) > 5])
-                    take_text = self.model.make_sentence(tries=50, message=seed_text)
+                    seed_candidates = [msg for msg in self.previous_messages[4:] if len(msg.split(' ')) > 5]
+                    if len(seed_candidates) > 0:
+                        seed_text = random.choice(seed_candidates)
+                        take_text = self.model.make_sentence(tries=50, message=seed_text)
+                    else:
+                        take_text = self.model.make_sentence(tries=50)
                 else:
                     take_text = self.model.make_sentence(tries=50)
 
@@ -80,6 +85,13 @@ class Bot:
                     pre = f'{pre}{punc}'
                     take_text = f'{pre} {take_text}'
 
+            # reset cooldowns
+            if trigger_icd:
+                if message is None:
+                    self.time_of_random = time.time()
+                else:
+                    self.user_mention_times[message.author.id] = time.time()
+
             return take_text
 
     def generate_rant(self, rant_size=None, trigger_icd=False):
@@ -87,7 +99,7 @@ class Bot:
             rant_size = self.rant_size
 
         # do not post if the channel hasn't been set or if the bot has been manually disabled
-        if (self.channel_id == '') | (not self.enabled):
+        if (self.channel_id == '') | (not self.takes_enabled):
             return
         else:
             rant = ''
@@ -129,7 +141,7 @@ class Bot:
         return text
 
     def status(self, author):
-        status = f'**Enabled**: {self.enabled}\n' \
+        status = f'**Enabled**: {self.takes_enabled}\n' \
                  f'**Learning**: {self.learn}\n' \
                  f'**Warlock-only**: {self.restricted}\n' \
                  f'**Parsed sentences**: {len(self.model.generator.parsed_sentences)}\n' \

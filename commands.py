@@ -195,9 +195,23 @@ class Commands(commands.Cog, name='Commands'):
         brief='Disables the bot from posting takes or rants'
     )
     @can_ban()
-    async def disable(self, ctx):
-        self.bots[ctx.guild.id].enabled = False
-        await ctx.send('Takes disabled')
+    async def disable(self, ctx, arg=None):
+        if arg is None:
+            self.bots[ctx.guild.id].takes_enabled = False
+            self.bots[ctx.guild.id].replies_enabled = False
+            self.bots[ctx.guild.id].gifs_enabled = False
+            await ctx.send('Takes, replies, and gifs disabled')
+        elif arg == 'gifs':
+            self.bots[ctx.guild.id].gifs_enabled = False
+            await ctx.send('Gifs disabled')
+        elif arg == 'replies':
+            self.bots[ctx.guild.id].replies_enabled = False
+            await ctx.send('Replies disabled')
+        elif arg == 'takes':
+            self.bots[ctx.guild.id].takes_enabled = False
+            await ctx.send('Takes disabled')
+        else:
+            pass
 
     @disable.error
     async def disable_error(self, ctx, error):
@@ -209,9 +223,23 @@ class Commands(commands.Cog, name='Commands'):
         brief='Enables the bot to post takes and rants'
     )
     @can_ban()
-    async def enable(self, ctx):
-        self.bots[ctx.guild.id].enabled = True
-        await ctx.send('Takes enabled')
+    async def enable(self, ctx, arg=None):
+        if arg is None:
+            self.bots[ctx.guild.id].takes_enabled = True
+            self.bots[ctx.guild.id].replies_enabled = True
+            self.bots[ctx.guild.id].gifs_enabled = True
+            await ctx.send('Takes, replies, and gifs enabled')
+        elif arg == 'gifs':
+            self.bots[ctx.guild.id].gifs_enabled = True
+            await ctx.send('Gifs enabled')
+        elif arg == 'replies':
+            self.bots[ctx.guild.id].replies_enabled = True
+            await ctx.send('Replies enabled')
+        elif arg == 'takes':
+            self.bots[ctx.guild.id].takes_enabled = True
+            await ctx.send('Takes enabled')
+        else:
+            pass
 
     @enable.error
     async def enable_error(self, ctx, error):
