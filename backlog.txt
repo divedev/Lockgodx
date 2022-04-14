@@ -3,10 +3,9 @@ save guild settings to file
 add support for no-cooldown lgx channel
 reddit data set
 add support for no-ping user data loading/checking
-gif responses?
+do not smart reply if seed text contains under a number of unique words
 simming user should update their data to recent
 ignore one word inquiries?
 see if we can modify the smart response to not necessarily start with the seed word (make the bot extend the markov model and override the method)
 "add" command to add a dataset to existing set -- update status too
-personal cd on mention reply
 make his seed word based on the frequency of recently used words

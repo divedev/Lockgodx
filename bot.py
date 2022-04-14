@@ -1,6 +1,8 @@
+import json
 import math
 import os
 import random
+import requests
 import time
 
 import format
@@ -9,23 +11,28 @@ import model
 
 class Bot:
 
-    def __init__(self, guild_id):
+    def __init__(self, guild_id, TENOR_TOKEN):
         self.model = model.Model()
 
         self.channel_id = ''
         self.guild_id = guild_id
+
+        self.TENOR_TOKEN = TENOR_TOKEN
 
         self.random_wait = 5
         self.msgs_wait = 10
         self.mention_wait = 2
         self.rant_size = 10
         self.rant_chance = 5
+        self.gif_chance = 1
 
         self.can_generate_unique_takes = False
         self.max_previous_takes = 20
         self.previous_takes = []
 
-        self.enabled = True
+        self.takes_enabled = True
+        self.replies_enabled = True
+        self.gifs_enabled = True
         self.learn = True
         self.restricted = False
         self.training_root_dir = 'train'
@@ -36,30 +43,30 @@ class Bot:
         self.msgs_waited = 0
         self.previous_messages = []
 
-    def generate_take(self, message=None, trigger_icd=False):
-        # do not post if the channel hasn't been set or if the bot has been manually disabled
-        if (self.channel_id == '') | (not self.enabled):
+    def generate_take(self, message=None):
+        # do not generate take if:
+        # 1. channel is not set
+        # 2. a random take is being requested, but random takes are disabled
+        # 3. a reply is being requested, but repies are disabled
+        if (self.channel_id == '') \
+                or ((message is None) and (not self.takes_enabled)) \
+                or ((message is not None) and (not self.replies_enabled)):
             return
         else:
-            # reset cooldowns
-            if trigger_icd:
-                if message is None:
-                    self.time_of_random = time.time()
-                else:
-                    self.user_mention_times[message.author.id] = time.time()
-
             if message is None:
                 # probabilistically pick a random word from recent conversation to seed a take
                 if random.random() < 0.8 and (len(self.previous_messages)>5):
-                    seed_text = random.choice([msg for msg in self.previous_messages[4:] if len(msg.split(' ')) > 5])
-                    take_text = self.model.make_sentence(tries=50, message=seed_text)
+                    seed_text = self.get_seed_word_from_previous_msgs()
                 else:
-                    take_text = self.model.make_sentence(tries=50)
+                    seed_text = None
 
+                take_text = self.model.make_sentence(tries=50, message=seed_text)
                 take_text = self.ensure_unique(format.text_cleaner(take_text))
             else:
                 # seed the take with the message content
-                take_text = self.model.make_sentence(tries=50, message=message.content)
+                take_text = self.model.make_sentence(tries=50,
+                                                     message=message.content,
+                                                     smart_eligible=self.enough_unique_words(message.content))
                 take_text = self.ensure_unique(format.text_cleaner(take_text), message=message.content)
 
             self.log_take(take_text)
@@ -68,7 +75,7 @@ class Bot:
 
             if message is not None:
                 # sometimes add "because" to the beginning, if it's a "why" question
-                if ('why' in message.content.split(' ')) & (random.random() < 0.8) :
+                if ('why' in message.content.split(' ')) and (random.random() < 0.8):
                     pre = random.choice(['because', 'Because', 'bc'])
                     take_text = f'{pre} {take_text}'
 
@@ -87,7 +94,7 @@ class Bot:
             rant_size = self.rant_size
 
         # do not post if the channel hasn't been set or if the bot has been manually disabled
-        if (self.channel_id == '') | (not self.enabled):
+        if (self.channel_id == '') | (not self.takes_enabled):
             return
         else:
             rant = ''
@@ -110,6 +117,29 @@ class Bot:
             else:
                 pass
 
+    def generate_gif(self, seed=None):
+        num_gifs_to_request = 8
+
+        if seed is None:
+            seed = self.get_seed_word_from_previous_msgs()
+
+            if seed is None:
+                return
+
+        seed = format.remove_boring_words(seed)
+        seed = random.choices(seed, k=min(3, len(seed)))
+
+        r = requests.get(
+            "https://g.tenor.com/v1/search?q=%s&key=%s&limit=%s" % (seed, self.TENOR_TOKEN, num_gifs_to_request))
+
+        if r.status_code == 200:
+            top_5gifs = json.loads(r.content)
+            gif_urls = [result['media'][0]['gif']['url'] for result in top_5gifs['results']]
+
+            return random.choice(gif_urls)
+        else:
+            return
+
     def log_take(self, text):
         if len(self.previous_takes) >= self.max_previous_takes:
             self.previous_takes = self.previous_takes[1:]
@@ -128,8 +158,14 @@ class Bot:
 
         return text
 
+    def start_random_cd(self):
+        self.time_of_random = time.time()
+
+    def start_reply_cd(self, author):
+        self.user_mention_times[author.id] = time.time()
+
     def status(self, author):
-        status = f'**Enabled**: {self.enabled}\n' \
+        status = f'**Enabled features**: {", ".join(str(x) for x in self.get_enabled_functions())}\n' \
                  f'**Learning**: {self.learn}\n' \
                  f'**Warlock-only**: {self.restricted}\n' \
                  f'**Parsed sentences**: {len(self.model.generator.parsed_sentences)}\n' \
@@ -138,11 +174,11 @@ class Bot:
                  f'**Mention reply cooldown** ({author.name}): {self.get_remaining_cooldown(author=author, string=True)} of {math.floor(self.mention_wait)}m\n' \
                  f'**Random take cooldown**: {self.get_remaining_cooldown(string=True)} of {math.floor(self.random_wait)}m\n' \
                  f'**Rant chance**: {self.rant_chance}%\n' \
-                 f'**Rant size**: {self.rant_size}\n'
-
+                 f'**Rant size**: {self.rant_size}\n' \
+                 f'**Gif chance**: {self.gif_chance}%\n'
         return status
 
-    def train_full(self, train_dir=None, file=None):
+    def train_on_files(self, train_dir=None, file=None):
         if train_dir is None:
             full_train_dir = self.training_root_dir
         else:
@@ -193,14 +229,13 @@ class Bot:
 
         self.model = model.Model(state_size=state_size)
 
-    # adds message to markov model and sets flags for ready to post randomly or reply
-    # to mention by checking the time elapsed since the last mention response or random post
+    # adds message to markov model and checks if the model knows enough to generate multiple unique outputs
     async def train(self, message):
         # incorporate the message into the model if learning is enabled and the message is long enough to learn from
         if self.learn & (len(message.content.split()) > self.model.generator.state_size):
             self.model.update_model(message.content)
 
-        # set readiness flags
+        # set readiness flag
         self.can_generate_unique_takes = self.test_take_readiness()
 
     # if the model can spit out test_size unique takes, its model is "ready". once readiness is determined, do not check
@@ -228,3 +263,30 @@ class Bot:
             return ret
         else: # return string of minutes and seconds
             return format.time_to_text(sec_remaining)
+
+    def get_seed_word_from_previous_msgs(self):
+        seed_candidates = [msg for msg in self.previous_messages[4:] if len(msg.split(' ')) > 5]
+
+        if len(seed_candidates) > 0:
+            return random.choice(seed_candidates)
+        else:
+            return None
+
+    def get_enabled_functions(self):
+        enabled = []
+
+        if self.gifs_enabled:
+            enabled.append('gifs')
+        if self.takes_enabled:
+            enabled.append('takes')
+        if self.replies_enabled:
+            enabled.append('replies')
+
+        if len(enabled)==0:
+            enabled = 'none'
+
+        return enabled
+
+    def enough_unique_words(self, message, min_unique_words=5):
+        word_set = set(message.split(' '))
+        return len(word_set) > min_unique_words

@@ -152,6 +152,7 @@ class Commands(commands.Cog, name='Commands'):
     @can_ban()
     async def load(self, ctx, arg=None):
         bot = self.bots[ctx.guild.id]
+        await ctx.guild.get_member(self.client.user.id).edit(nick=None)
 
         if arg is None:
             arg = 'default'
@@ -180,7 +181,7 @@ class Commands(commands.Cog, name='Commands'):
             try:
                 await ctx.guild.get_member(self.client.user.id).edit(nick=None)
                 await ctx.send(f'Training on {arg} set')
-                self.bots[ctx.guild.id].train_full(arg)
+                self.bots[ctx.guild.id].train_on_files(arg)
                 await ctx.send(f'Trained on {arg} set')
             except FileNotFoundError:
                 await ctx.send(f'Dataset {arg} not found')
@@ -195,9 +196,23 @@ class Commands(commands.Cog, name='Commands'):
         brief='Disables the bot from posting takes or rants'
     )
     @can_ban()
-    async def disable(self, ctx):
-        self.bots[ctx.guild.id].enabled = False
-        await ctx.send('Takes disabled')
+    async def disable(self, ctx, arg=None):
+        if arg is None:
+            self.bots[ctx.guild.id].takes_enabled = False
+            self.bots[ctx.guild.id].replies_enabled = False
+            self.bots[ctx.guild.id].gifs_enabled = False
+            await ctx.send('Takes, replies, and gifs disabled')
+        elif arg == 'gifs':
+            self.bots[ctx.guild.id].gifs_enabled = False
+            await ctx.send('Gifs disabled')
+        elif arg == 'replies':
+            self.bots[ctx.guild.id].replies_enabled = False
+            await ctx.send('Replies disabled')
+        elif arg == 'takes':
+            self.bots[ctx.guild.id].takes_enabled = False
+            await ctx.send('Takes disabled')
+        else:
+            pass
 
     @disable.error
     async def disable_error(self, ctx, error):
@@ -209,9 +224,27 @@ class Commands(commands.Cog, name='Commands'):
         brief='Enables the bot to post takes and rants'
     )
     @can_ban()
-    async def enable(self, ctx):
-        self.bots[ctx.guild.id].enabled = True
-        await ctx.send('Takes enabled')
+    async def enable(self, ctx, arg=None):
+        bot = self.bots[ctx.guild.id]
+        if arg is None:
+            bot.takes_enabled = True
+            bot.replies_enabled = True
+            bot.gifs_enabled = True
+            await ctx.send('Takes, replies, and gifs enabled')
+        elif arg == 'gifs':
+            if bot.TENOR_TOKEN is not None:
+                bot.gifs_enabled = True
+                await ctx.send('Gifs enabled')
+            else:
+                await ctx.send('Cannot use gifs without Tenor token')
+        elif arg == 'replies':
+            bot.replies_enabled = True
+            await ctx.send('Replies enabled')
+        elif arg == 'takes':
+            bot.takes_enabled = True
+            await ctx.send('Takes enabled')
+        else:
+            pass
 
     @enable.error
     async def enable_error(self, ctx, error):
@@ -360,7 +393,7 @@ class Commands(commands.Cog, name='Commands'):
         else:
             await channel.send(f'Found existing data for {usertag}')
 
-        self.bots[ctx.guild.id].train_full(train_dir='users', file=f'{usertag}.txt')
+        self.bots[ctx.guild.id].train_on_files(train_dir='users', file=f'{usertag}.txt')
         await channel.send(f'Now simulating {usertag}')
         await ctx.guild.get_member(self.client.user.id).edit(nick=f'{user.name}bot')
 
@@ -411,4 +444,18 @@ class Commands(commands.Cog, name='Commands'):
 
     @models.error
     async def models_error(self, ctx, error):
+        return
+
+    @commands.command(
+        name='gif_chance',
+        help='Sets the % chance of posting a gif',
+        brief='Sets the % chance of posting a gif'
+    )
+    @can_ban()
+    async def gif_chance(self, ctx, arg):
+        self.bots[ctx.guild.id].gif_chance = float(arg)
+        await ctx.send(f'Chance of posting a gif set to {self.bots[ctx.guild.id].gif_chance}%')
+
+    @gif_chance.error
+    async def gif_chance_error(self, ctx, error):
         return

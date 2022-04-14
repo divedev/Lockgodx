@@ -13,6 +13,12 @@ cmd_prefix = '$'
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 
+try:
+    TENOR_TOKEN = os.getenv('TENOR_TOKEN')
+except:
+    TENOR_TOKEN = None
+    print('No Tenor token found. GIFs will be disabled')
+
 intents = discord.Intents.default()
 intents.members = True
 client = discord.ext.commands.Bot(command_prefix=cmd_prefix, intents=intents)
@@ -25,7 +31,11 @@ restricted_roles = ['Vending Machine', 'Vanilla Warrior']
 @client.event
 async def on_ready():
     for guild in client.guilds:
-        bots[guild.id] = bot.Bot(guild.id)
+        bots[guild.id] = bot.Bot(guild.id, TENOR_TOKEN)
+
+        if TENOR_TOKEN is None:
+            bots[guild.id].gifs_enabled = False
+
         await guild.get_member(client.user.id).edit(nick=None)
 
     print('Logged in as {0.user}'.format(client))
@@ -36,8 +46,8 @@ async def on_message(message):
     guild_id = message.guild.id
     bot = bots[guild_id]
 
-    # do not respond to own messages or pins
-    if (message.author == client.user) or (message.type != discord.MessageType.default):
+    # do not respond to own messages, pins, or messages from unpermitted roles
+    if (message.author == client.user) or (message.type != discord.MessageType.default) or not is_permitted(message.author):
         return
     # respond to commands
     elif message.content.startswith(cmd_prefix):
@@ -65,30 +75,42 @@ async def on_message(message):
             # check if the cooldown time has elapsed
             if cooldown_check(bot.user_mention_times[message.author.id], bot.mention_wait):
                 async with message.channel.typing():
-                    take = bot.generate_take(message=message, trigger_icd=True)
-                    await message.reply(take)
-                    return
+                    if (random.random()*100 <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
+                        output = bot.generate_gif(seed=message.content)
+                    else:
+                        output = bot.generate_take(message=message)
+
+                    await message.reply(output)
             # do not reply if user is on cooldown
             else:
                 return
         else:
             async with message.channel.typing():
-                take = bot.generate_take(message=message, trigger_icd=True)
+                take = bot.generate_take(message=message)
                 await message.reply(take)
-                return
+
+        bot.start_reply_cd(message.author)
+
+        return
 
     # post randomly if ready
     if cooldown_check(bot.time_of_random, bot.random_wait):
         async with message.channel.typing():
             bot.time_of_random = time.time()
 
-            if random.random() * 100 > bot.rant_chance:
-                output = bot.generate_take(None, trigger_icd=True)
+            roll = random.random() * 100
+            if (roll <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
+                output = bot.generate_gif()
+            elif roll <= bot.gif_chance + bot.rant_chance:
+                output = bot.generate_rant()
             else:
-                output = bot.generate_rant(trigger_icd=True)
+                output = bot.generate_take()
 
             bot.msgs_waited = 0 # reset the anti-spam message counter to 0
-            await message.channel.send(output)
+            if output is not None:
+                await message.channel.send(output)
+            else:
+                pass
 
 
 def is_permitted(author):

@@ -123,8 +123,9 @@ def remove_boring_words(query_text):
               'is', 'am', 'if', 'was', 'are', 'i', 'should', 'would', 'does', 'this', 'oh', 'um', 'huh', 'heh', 'as',
               'a', 'an', 'or', 'be', 'on', 'in', 'for', 'thoughts', 'and', 'your', 'u', 'ur', 'about', 'to', 'my',
               'mine', 'too', 'about', 'at', 'arent', 'there', 'their', 'opinion', 'not', 'that', 'i', 'how', 'so', 'of',
-              'them', 'but', 'than', 'much', 'yet', 'unto', 'have', 'us']
+              'them', 'but', 'than', 'much', 'yet', 'unto', 'have', 'us', 'the']
 
+    query_text = query_text.split(' ')
     query_text = [word for word in query_text if str.lower(word) not in boring]
     query_text = [remove_all_punctuation(word) for word in query_text if not word.startswith('<')]
 
