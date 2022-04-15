@@ -168,7 +168,7 @@ class Bot:
     def status(self, author):
         status = f'**Enabled features**: {", ".join(str(x) for x in self.get_enabled_functions())}\n' \
                  f'**Learning**: {self.learn}\n' \
-                 f'**Warlock-only**: {self.restricted}\n' \
+                 f'**Ignore restricted roles**: {self.restricted}\n' \
                  f'**Parsed sentences**: {len(self.model.generator.parsed_sentences)}\n' \
                  f'**Chain**: {self.model.state_size}\n' \
                  f'**Data set**: {self.current_data_set}\n' \
