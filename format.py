@@ -134,7 +134,7 @@ def remove_boring_words(query_text):
 
 def write_history(hist, root_dir, file_name):
     if f'{file_name}.txt' not in os.listdir(root_dir):
-        with open(f'{root_dir}/{file_name}.txt', 'w', encoding='cp437') as f:
+        with open(f'{root_dir}/{file_name}.txt', 'w', encoding='iso-8859-1') as f:
             for line in hist:
                 try:
                     f.write(f'{text_cleaner(line)}\n')

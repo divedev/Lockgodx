@@ -48,7 +48,7 @@ class Model:
 
         try:
             model_json = self.generator.to_json()
-            with open(f'{self.root_dir}{model_name}.json', 'w', encoding='cp437') as outfile:
+            with open(f'{self.root_dir}{model_name}.json', 'w', encoding='iso-8859-1') as outfile:
                 outfile.write(model_json)
             return 1
         except:

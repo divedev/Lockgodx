@@ -47,7 +47,7 @@ class Bot:
         # do not generate take if:
         # 1. channel is not set
         # 2. a random take is being requested, but random takes are disabled
-        # 3. a reply is being requested, but repies are disabled
+        # 3. a reply is being requested, but replies are disabled
         if (self.channel_id == '') \
                 or ((message is None) and (not self.takes_enabled)) \
                 or ((message is not None) and (not self.replies_enabled)):
@@ -82,7 +82,8 @@ class Bot:
                 # sometimes answer yes/no questions
                 yes_no_q = any([x in ['are', 'is', 'will', 'do', 'does', 'doesnt', 'am', 'should', 'have', 'would', 'did'] for x in message.content.split(' ')[:2]])
                 if yes_no_q & (random.random() < 0.8):
-                    pre = random.choice(['yea', 'ya', 'yeah', 'yep', 'na', 'nah', 'no', 'nope'])
+                    pre = random.choice(['yea', 'ya', 'yeah', 'yep', 'ya?', 'ya lol', 'uhh ya?', 'ya LOL', 'yea lol',
+                                         'yeah tbh',  'na', 'nah', 'no', 'nope', 'no lol', 'no LOL', 'uhh no'])
                     punc = random.choice(['', '.', ','])
                     pre = f'{pre}{punc}'
                     take_text = f'{pre} {take_text}'
@@ -94,7 +95,7 @@ class Bot:
             rant_size = self.rant_size
 
         # do not post if the channel hasn't been set or if the bot has been manually disabled
-        if (self.channel_id == '') | (not self.takes_enabled):
+        if (self.channel_id == '') or (not self.takes_enabled):
             return
         else:
             rant = ''
@@ -202,7 +203,7 @@ class Bot:
             lines = []
 
             if (file is None) or (f == file):
-                with open(training_file_path, 'r', encoding='cp437') as f_data:
+                with open(training_file_path, 'r', encoding='iso-8859-1') as f_data:
                     try:
                         for line in f_data:
 

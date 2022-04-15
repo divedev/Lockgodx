@@ -420,7 +420,7 @@ class Commands(commands.Cog, name='Commands'):
             if f'{usertag}.txt' in os.listdir(full_path):
                 entire_path = f"{full_path}{usertag}.txt"
                 ct = 0
-                with open(entire_path, "r", encoding='cp437') as f:
+                with open(entire_path, "r", encoding='iso-8859-1') as f:
                     for line in f:
                         if line.strip():
                             ct += 1

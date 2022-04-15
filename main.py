@@ -47,7 +47,9 @@ async def on_message(message):
     bot = bots[guild_id]
 
     # do not respond to own messages, pins, or messages from unpermitted roles
-    if (message.author == client.user) or (message.type != discord.MessageType.default) or not is_permitted(message.author):
+    if (message.author == client.user) \
+            or (message.type != discord.MessageType.default) \
+            or (bot.restricted and not is_permitted(message.author)):
         return
     # respond to commands
     elif message.content.startswith(cmd_prefix):
@@ -94,7 +96,7 @@ async def on_message(message):
         return
 
     # post randomly if ready
-    if cooldown_check(bot.time_of_random, bot.random_wait):
+    if cooldown_check(bot.time_of_random, bot.random_wait) and (bot.msgs_waited >= bot.msgs_wait):
         async with message.channel.typing():
             bot.time_of_random = time.time()
 
