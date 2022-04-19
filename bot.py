@@ -83,7 +83,10 @@ class Bot:
                 yes_no_q = any([x in ['are', 'is', 'will', 'do', 'does', 'doesnt', 'am', 'should', 'have', 'would', 'did'] for x in message.content.split(' ')[:2]])
                 if yes_no_q & (random.random() < 0.8):
                     pre = random.choice(['yea', 'ya', 'yeah', 'yep', 'ya?', 'ya lol', 'uhh ya?', 'ya LOL', 'yea lol',
-                                         'yeah tbh',  'na', 'nah', 'no', 'nope', 'no lol', 'no LOL', 'uhh no'])
+                                         'yeah tbh',  'na', 'nah', 'no', 'nope', 'no lol', 'no LOL', 'uhh no', 'kinda',
+                                         'idk maybe', 'maybe?', 'maybe', 'mb', 'not sure', 'probly', 'probs', 'prob ya',
+                                         'prob no', 'prob', 'dont think so', 'id say yes', 'id say no', 'cant tell',
+                                         'idc', 'who cares?', 'irrelevant tbh'])
                     punc = random.choice(['', '.', ','])
                     pre = f'{pre}{punc}'
                     take_text = f'{pre} {take_text}'
