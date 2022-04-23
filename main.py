@@ -30,6 +30,8 @@ restricted_roles = ['Vending Machine', 'Vanilla Warrior']
 
 @client.event
 async def on_ready():
+    setup_guilds_dir()
+
     for guild in client.guilds:
         bots[guild.id] = bot.Bot(guild.id, TENOR_TOKEN)
 
@@ -78,7 +80,7 @@ async def on_message(message):
             if cooldown_check(bot.user_mention_times[message.author.id], bot.mention_wait):
                 async with message.channel.typing():
                     if (random.random()*100 <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
-                        output = bot.generate_gif(seed=message.content)
+                        output = bot.generate_gif(seed=message.content.lower())
                     else:
                         output = bot.generate_take(message=message)
 
@@ -113,6 +115,17 @@ async def on_message(message):
                 await message.channel.send(output)
             else:
                 pass
+
+def setup_guilds_dir():
+    dirs = [ f.name for f in os.scandir() if f.is_dir() ]
+    if 'guilds' not in dirs:
+        os.mkdir('guilds')
+
+    guild_id_dirs = [ f.name for f in os.scandir('guilds') if f.is_dir() ]
+
+    for guild in client.guilds:
+        if str(guild.id) not in guild_id_dirs:
+            os.mkdir(f'guilds/{guild.id}')
 
 
 def is_permitted(author):

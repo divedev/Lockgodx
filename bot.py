@@ -37,6 +37,8 @@ class Bot:
         self.restricted = False
         self.training_root_dir = 'train'
         self.current_data_set = 'none'
+        self.guild_dir = f'guilds/{guild_id}'
+        self.rules_path = f'guilds/{guild_id}/rules.txt'
 
         self.user_mention_times = {}
         self.time_of_random = time.time() - self.random_wait*60
@@ -294,3 +296,48 @@ class Bot:
     def enough_unique_words(self, message, min_unique_words=5):
         word_set = set(message.split(' '))
         return len(word_set) > min_unique_words
+
+    def add_rule(self, rule):
+        self.make_rule_file_if_needed()
+
+        with open(self.rules_path, 'a') as f:
+            f.write(f'{rule}\n')
+
+        return 1
+
+    def remove_rule(self, rule_number):
+        if not self.make_rule_file_if_needed():  # if rule file must be created, there are no rules for us to remove
+            lines = []
+            ret = ''
+
+            with open(self.rules_path, 'r') as f:
+                for num, line in enumerate(f.readlines()):
+                    if num != rule_number-1:
+                        lines.append(line)
+                    else:
+                        ret = line
+
+            with open(self.rules_path, 'w') as f:
+                for line in lines:
+                    f.write(f'{line}')
+
+            return ret.rstrip()
+
+        else:
+            return
+
+    def get_rules(self):
+        self.make_rule_file_if_needed()
+
+        rules=''
+        with open(f'{self.guild_dir}/rules.txt', 'r') as f:
+            for num,line in enumerate(f.readlines()):
+                rules = f'{rules}{num+1}. {line}'
+
+        return rules
+
+    def make_rule_file_if_needed(self):
+        dir = f'{self.guild_dir}'
+        if 'rules.txt' not in os.listdir(dir):
+            open(f'{dir}/rules.txt', 'a').close()
+            return 1

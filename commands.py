@@ -459,3 +459,38 @@ class Commands(commands.Cog, name='Commands'):
     @gif_chance.error
     async def gif_chance_error(self, ctx, error):
         return
+
+    @commands.command(
+        name='rule',
+        help='Add or remove a server rule. Usage: `$rule add x` or `$rule remove y`. x shall be the text of the new '
+             'rule, and y shall be the number of the existing rule to remove',
+        brief='`add` or `remove` a server rule'
+    )
+    @can_ban()
+    async def rule(self, ctx, *args):
+        bot = self.bots[ctx.guild.id]
+        new_rule = " ".join(args[1:])
+
+        if args[0] == 'add':
+            if bot.add_rule(new_rule):
+                await ctx.send(f"Added rule \"{new_rule}\"")
+            else:
+                await ctx.send('Failed to add new rule')
+        elif args[0] == 'remove':
+            await ctx.send(f'Removed rule \"{bot.remove_rule( int(args[1]) )}\"')
+
+    @rule.error
+    async def rule_error(self, ctx, *args):
+        return
+
+    @commands.command(
+        name='rules',
+        help='View the current rules',
+        brief='View the current rules'
+    )
+    async def rules(self, ctx):
+        await ctx.send(self.bots[ctx.guild.id].get_rules())
+
+    @rules.error
+    async def rules_error(self, ctx):
+        return
