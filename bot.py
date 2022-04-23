@@ -294,6 +294,7 @@ class Bot:
         return enabled
 
     def enough_unique_words(self, message, min_unique_words=5):
+        message = format.remove_special(message)
         word_set = set(message.split(' '))
         return len(word_set) > min_unique_words
 

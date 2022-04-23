@@ -16,7 +16,7 @@ def remove_mentions(text):
 def remove_special(text):
     chars = ['â', '€', '™', '‰', 'ð', 'Ÿ', '¤', '¡', 'š', '~', '˜', 'Γ', 'Ç', 'Ö', 'ª',
              '¥', '£', '≡', 'ƒ', 'Æ', '¬', 'Å', '┐', 'é', 'Ñ', 'ö', 'ÿ', '¢', '┬', '»', 'π',
-             'ä', 'ñ', 'í', '⠀']
+             'ä', 'ñ', 'í', '⠀', '⠀⠀']
 
     for char in chars:
         text = text.replace(char, '')
@@ -123,10 +123,10 @@ def remove_boring_words(query_text):
               'is', 'am', 'if', 'was', 'are', 'i', 'should', 'would', 'does', 'this', 'oh', 'um', 'huh', 'heh', 'as',
               'a', 'an', 'or', 'be', 'on', 'in', 'for', 'thoughts', 'and', 'your', 'u', 'ur', 'about', 'to', 'my',
               'mine', 'too', 'about', 'at', 'arent', 'there', 'their', 'opinion', 'not', 'that', 'i', 'how', 'so', 'of',
-              'them', 'but', 'than', 'much', 'yet', 'unto', 'have', 'us', 'the']
+              'them', 'but', 'than', 'much', 'yet', 'unto', 'have', 'us', 'the', '⠀',' ','⠀⠀']
 
     query_text = query_text.split(' ')
-    query_text = [word for word in query_text if str.lower(word) not in boring]
+    query_text = [remove_special(word) for word in query_text if str.lower(word) not in boring]
     query_text = [remove_all_punctuation(word) for word in query_text if not word.startswith('<')]
 
     return query_text
