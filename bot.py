@@ -334,6 +334,9 @@ class Bot:
             for num,line in enumerate(f.readlines()):
                 rules = f'{rules}{num+1}. {line}'
 
+        if rules == '':
+            rules = 'No rules'
+
         return rules
 
     def make_rule_file_if_needed(self):
