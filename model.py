@@ -20,7 +20,7 @@ class Model:
 
         if (message is not None) and (random.random() < self.smart_reply_chance/100) and smart_eligible:
             content = format.remove_boring_words(message)
-            random.shuffle(content)
+            random.shuffle(set(content))
 
             for word in content:
                 try:
