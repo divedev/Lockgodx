@@ -271,7 +271,7 @@ class Bot:
             return format.time_to_text(sec_remaining)
 
     def get_seed_word_from_previous_msgs(self):
-        seed_candidates = [msg for msg in set(self.previous_messages[4:]) if len(msg.split(' ')) > 5]
+        seed_candidates = [msg for msg in list(set(self.previous_messages[4:])) if len(msg.split(' ')) > 5]
 
         if len(seed_candidates) > 0:
             return random.choice(seed_candidates)

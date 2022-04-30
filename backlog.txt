@@ -10,3 +10,4 @@ see if we can modify the smart response to not necessarily start with the seed w
 make his seed word based on the frequency of recently used words
 do not use numbers as smart reply
 use word2vec to emoji-react to posts based on the highest-similarity word to the base emoji set
+realistic typing speed
