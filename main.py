@@ -3,6 +3,7 @@ import os
 import random
 import time
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
 
 import bot
@@ -18,6 +19,8 @@ try:
 except:
     TENOR_TOKEN = None
     print('No Tenor token found. GIFs will be disabled')
+
+bad_words_file = 'bad_words.txt'
 
 intents = discord.Intents.default()
 intents.members = True
@@ -37,6 +40,8 @@ async def on_ready():
 
         if TENOR_TOKEN is None:
             bots[guild.id].gifs_enabled = False
+
+        bots[guild.id].bad_words = get_bad_words()
 
         await guild.get_member(client.user.id).edit(nick=None)
 
@@ -116,6 +121,13 @@ async def on_message(message):
             else:
                 pass
 
+
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, CommandNotFound):
+        return
+    raise error
+
 def setup_guilds_dir():
     dirs = [ f.name for f in os.scandir() if f.is_dir() ]
     if 'guilds' not in dirs:
@@ -135,6 +147,19 @@ def is_permitted(author):
 
 def cooldown_check(time_of_cooldown, cooldown_length):
     return (time.time() - time_of_cooldown) > cooldown_length*60
+
+def get_bad_words():
+    bad_words = []
+
+    try:
+        with open(bad_words_file, 'r') as f:
+            for line in f.readlines():
+                if len(line.strip()) > 0:
+                    bad_words.append(line.strip())
+    except:
+        print("Could not load bad words file. Create 'bad_words.txt' in the main directory to enable bad word filtering.")
+
+    return bad_words
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))

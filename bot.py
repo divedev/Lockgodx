@@ -30,6 +30,8 @@ class Bot:
         self.max_previous_takes = 20
         self.previous_takes = []
 
+        self.bad_words = []
+
         self.takes_enabled = True
         self.replies_enabled = True
         self.gifs_enabled = True
@@ -68,7 +70,7 @@ class Bot:
                 # seed the take with the message content
                 take_text = self.model.make_sentence(tries=50,
                                                      message=message.content,
-                                                     smart_eligible=self.enough_unique_words(message.content))
+                                                     smart_eligible=self.enough_unique_and_nonboring_words(message.content))
                 take_text = self.ensure_unique(format.text_cleaner(take_text), message=message.content)
 
             self.log_take(take_text)
@@ -237,9 +239,14 @@ class Bot:
 
     # adds message to markov model and checks if the model knows enough to generate multiple unique outputs
     async def train(self, message):
+        message = message.content
+        eligible_for_training = self.enough_unique_and_nonboring_words(message, min_unique_words=3) \
+                                & self.no_spammed_words(message) \
+                                & self.no_bad_words(message)
+
         # incorporate the message into the model if learning is enabled and the message is long enough to learn from
-        if self.learn & (len(message.content.split()) > self.model.generator.state_size):
-            self.model.update_model(message.content)
+        if self.learn & eligible_for_training:
+            self.model.update_model(message)
 
         # set readiness flag
         self.can_generate_unique_takes = self.test_take_readiness()
@@ -293,10 +300,35 @@ class Bot:
 
         return enabled
 
-    def enough_unique_words(self, message, min_unique_words=5):
+    def enough_unique_and_nonboring_words(self, message, min_unique_words=5, min_nonboring_words=2):
         message = format.remove_special(message)
         word_set = set(message.split(' '))
-        return len(word_set) > min_unique_words
+        enough_unique_words = len(word_set) > min_unique_words
+        enough_nonboring_words = len(format.remove_boring_words(message)) > min_nonboring_words
+        return enough_unique_words & enough_nonboring_words
+
+    def no_spammed_words(self, message, spam_threshold = 3):
+        message = format.remove_boring_words(message)
+
+        word_frequency = {}
+
+        for word in message:
+
+            if word in word_frequency:
+                word_frequency[word] += 1
+                if word_frequency[word] >= spam_threshold:
+                    return False
+            else:
+                word_frequency[word] = 1
+
+        return True
+
+    def no_bad_words(self, message):
+        for word in message.split(' '):
+            if word.lower() in self.bad_words:
+                return False
+
+        return True
 
     def add_rule(self, rule):
         self.make_rule_file_if_needed()
