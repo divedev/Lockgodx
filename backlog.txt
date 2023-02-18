@@ -1,4 +1,5 @@
 make boring word list into a text file
+add seed-word option to $take and $rant
 save guild settings to file
 add support for no-cooldown lgx channel
 reddit data set
@@ -7,3 +8,6 @@ simming user should update their data to recent
 see if we can modify the smart response to not necessarily start with the seed word (make the bot extend the markov model and override the method)
 "add" command to add a dataset to existing set -- update status too
 make his seed word based on the frequency of recently used words
+do not use numbers as smart reply
+use word2vec to emoji-react to posts based on the highest-similarity word to the base emoji set
+realistic typing speed

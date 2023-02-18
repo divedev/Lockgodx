@@ -3,6 +3,7 @@ import os
 import random
 import time
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
 
 import bot
@@ -19,6 +20,8 @@ except:
     TENOR_TOKEN = None
     print('No Tenor token found. GIFs will be disabled')
 
+bad_words_file = 'bad_words.txt'
+
 intents = discord.Intents.default()
 intents.members = True
 client = discord.ext.commands.Bot(command_prefix=cmd_prefix, intents=intents)
@@ -30,11 +33,15 @@ restricted_roles = ['Vending Machine', 'Vanilla Warrior']
 
 @client.event
 async def on_ready():
+    setup_guilds_dir()
+
     for guild in client.guilds:
         bots[guild.id] = bot.Bot(guild.id, TENOR_TOKEN)
 
         if TENOR_TOKEN is None:
             bots[guild.id].gifs_enabled = False
+
+        bots[guild.id].bad_words = get_bad_words()
 
         await guild.get_member(client.user.id).edit(nick=None)
 
@@ -78,7 +85,7 @@ async def on_message(message):
             if cooldown_check(bot.user_mention_times[message.author.id], bot.mention_wait):
                 async with message.channel.typing():
                     if (random.random()*100 <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
-                        output = bot.generate_gif(seed=message.content)
+                        output = bot.generate_gif(seed=message.content.lower())
                     else:
                         output = bot.generate_take(message=message)
 
@@ -115,6 +122,24 @@ async def on_message(message):
                 pass
 
 
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, CommandNotFound):
+        return
+    raise error
+
+def setup_guilds_dir():
+    dirs = [ f.name for f in os.scandir() if f.is_dir() ]
+    if 'guilds' not in dirs:
+        os.mkdir('guilds')
+
+    guild_id_dirs = [ f.name for f in os.scandir('guilds') if f.is_dir() ]
+
+    for guild in client.guilds:
+        if str(guild.id) not in guild_id_dirs:
+            os.mkdir(f'guilds/{guild.id}')
+
+
 def is_permitted(author):
     roles = author.roles
     return not any(role.name in restricted_roles for role in roles)
@@ -122,6 +147,19 @@ def is_permitted(author):
 
 def cooldown_check(time_of_cooldown, cooldown_length):
     return (time.time() - time_of_cooldown) > cooldown_length*60
+
+def get_bad_words():
+    bad_words = []
+
+    try:
+        with open(bad_words_file, 'r') as f:
+            for line in f.readlines():
+                if len(line.strip()) > 0:
+                    bad_words.append(line.strip())
+    except:
+        print("Could not load bad words file. Create 'bad_words.txt' in the main directory to enable bad word filtering.")
+
+    return bad_words
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))

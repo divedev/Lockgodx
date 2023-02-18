@@ -19,7 +19,7 @@ class Model:
         sentence = self.generator.make_sentence(tries=tries)
 
         if (message is not None) and (random.random() < self.smart_reply_chance/100) and smart_eligible:
-            content = format.remove_boring_words(message)
+            content = list(set(format.remove_boring_words(message)))
             random.shuffle(content)
 
             for word in content:
