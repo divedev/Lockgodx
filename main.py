@@ -1,7 +1,7 @@
-import discord
 import os
-import random
 import time
+
+import discord
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
@@ -14,12 +14,6 @@ cmd_prefix = '$'
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 
-try:
-    TENOR_TOKEN = os.getenv('TENOR_TOKEN')
-except:
-    TENOR_TOKEN = None
-    print('No Tenor token found. GIFs will be disabled')
-
 bad_words_file = 'bad_words.txt'
 
 intents = discord.Intents.default()
@@ -28,18 +22,13 @@ client = discord.ext.commands.Bot(command_prefix=cmd_prefix, intents=intents)
 
 bots = {}
 
-restricted_roles = ['Vending Machine', 'Vanilla Warrior']
-
 
 @client.event
 async def on_ready():
     setup_guilds_dir()
 
     for guild in client.guilds:
-        bots[guild.id] = bot.Bot(guild.id, TENOR_TOKEN)
-
-        if TENOR_TOKEN is None:
-            bots[guild.id].gifs_enabled = False
+        bots[guild.id] = bot.Bot(guild.id)
 
         bots[guild.id].bad_words = get_bad_words()
 
@@ -53,28 +42,13 @@ async def on_message(message):
     guild_id = message.guild.id
     bot = bots[guild_id]
 
-    # do not respond to own messages, pins, or messages from unpermitted roles
+    # do not respond to own messages or pins
     if (message.author == client.user) \
-            or (message.type != discord.MessageType.default) \
-            or (bot.restricted and not is_permitted(message.author)):
+            or (message.type != discord.MessageType.default):
         return
     # respond to commands
     elif message.content.startswith(cmd_prefix):
         await client.process_commands(message)
-        return
-
-    # if the message was posted in the bot's set channel, log it -- otherwise ignore it
-    if message.channel.id == bot.channel_id:
-        # if bot is set to warlocks only and the message is sent from a non-warlock, do not train. else train
-        if bot.restricted & (not is_permitted(message.author)):
-            return
-        else:
-            if len(bot.previous_messages) >= 10:
-                bot.previous_messages = bot.previous_messages[1:]
-            bot.previous_messages.append(message.content)
-            bot.msgs_waited += 1 # increment the anti-spam message counter
-            await bot.train(message)
-    else:
         return
 
     # respond to mentions if ready
@@ -84,10 +58,7 @@ async def on_message(message):
             # check if the cooldown time has elapsed
             if cooldown_check(bot.user_mention_times[message.author.id], bot.mention_wait):
                 async with message.channel.typing():
-                    if (random.random()*100 <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
-                        output = bot.generate_gif(seed=message.content.lower())
-                    else:
-                        output = bot.generate_take(message=message)
+                    output = bot.generate_take(message=message)
 
                     await message.reply(output)
             # do not reply if user is on cooldown
@@ -107,15 +78,10 @@ async def on_message(message):
         async with message.channel.typing():
             bot.time_of_random = time.time()
 
-            roll = random.random() * 100
-            if (roll <= bot.gif_chance) & (TENOR_TOKEN is not None) & bot.gifs_enabled:
-                output = bot.generate_gif()
-            elif roll <= bot.gif_chance + bot.rant_chance:
-                output = bot.generate_rant()
-            else:
-                output = bot.generate_take()
+            output = bot.generate_take()
 
-            bot.msgs_waited = 0 # reset the anti-spam message counter to 0
+            bot.msgs_waited = 0  # reset the anti-spam message counter to 0
+
             if output is not None:
                 await message.channel.send(output)
             else:
@@ -127,6 +93,7 @@ async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         return
     raise error
+
 
 def setup_guilds_dir():
     dirs = [ f.name for f in os.scandir() if f.is_dir() ]
@@ -140,13 +107,9 @@ def setup_guilds_dir():
             os.mkdir(f'guilds/{guild.id}')
 
 
-def is_permitted(author):
-    roles = author.roles
-    return not any(role.name in restricted_roles for role in roles)
-
-
 def cooldown_check(time_of_cooldown, cooldown_length):
     return (time.time() - time_of_cooldown) > cooldown_length*60
+
 
 def get_bad_words():
     bad_words = []
