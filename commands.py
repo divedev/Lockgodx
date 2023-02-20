@@ -21,31 +21,30 @@ class Commands(commands.Cog, name='Commands'):
         self.client = client
         self.bots = bots
 
-    @commands.command(
+    @commands.slash_command(
         name='set_channel',
-        help='Sets the active channel for the bot. Must be specified before takes can be posted.',
-        brief='Sets the active channel for the bot.'
+        description='Sets the active channel for the bot. Must be specified before takes can be posted.',
     )
     @can_ban()
-    async def set_channel(self, ctx, arg=None):
-        if arg is not None:
-            self.bots[ctx.guild.id].channel_id = int(arg[2:-1])
-        else:
+    async def set_channel(self, ctx, arg: str = None):
+        if arg is None:
             self.bots[ctx.guild.id].channel_id = ctx.channel.id
+        else:
+            self.bots[ctx.guild.id].channel_id = int(arg[2:-1])
 
-        await ctx.send(f'Now active in {self.client.get_channel(self.bots[ctx.guild.id].channel_id).mention}')
+        active_channel_name = self.client.get_channel(self.bots[ctx.guild.id].channel_id).mention
+        await ctx.send(f'Now active in {active_channel_name}')
 
     @set_channel.error
     async def set_channel_error(self, ctx, error):
-        return
+        pass
 
-    @commands.command(
+    @commands.slash_command(
         name='disable',
-        help='Disables the bot from posting takes',
-        brief='Disables the bot from posting takes'
+        description='Disables the bot from posting takes'
     )
     @can_ban()
-    async def disable(self, ctx, arg=None):
+    async def disable(self, ctx, arg: str = None):
         if arg is None:
             self.bots[ctx.guild.id].takes_enabled = False
             self.bots[ctx.guild.id].replies_enabled = False
@@ -61,15 +60,14 @@ class Commands(commands.Cog, name='Commands'):
 
     @disable.error
     async def disable_error(self, ctx, error):
-        return
+        pass
 
-    @commands.command(
+    @commands.slash_command(
         name='enable',
-        help='Enables the bot to post takes',
-        brief='Enables the bot to post takes'
+        description='Enables the bot to post takes'
     )
     @can_ban()
-    async def enable(self, ctx, arg=None):
+    async def enable(self, ctx, arg: str = None):
         bot = self.bots[ctx.guild.id]
         if arg is None:
             bot.takes_enabled = True
@@ -86,56 +84,51 @@ class Commands(commands.Cog, name='Commands'):
 
     @enable.error
     async def enable_error(self, ctx, error):
-        return
+        pass
 
-    @commands.command(
+    @commands.slash_command(
         name='wait',
-        help='Sets the minimum delay between posting random takes, in minutes. Example: `$wait 5` sets his random post '
-             'internal cooldown to 5 minutes',
-        brief='Sets the delay between posting random takes, in minutes'
+        description='Sets the minimum delay between posting random takes, in minutes.'
     )
     @can_ban()
-    async def wait(self, ctx, arg=None):
-        if arg is not None:
-            self.bots[ctx.guild.id].random_wait = float(arg)
+    async def wait(self, ctx, minutes_to_wait: float = None):
+        if minutes_to_wait is None:
+            await ctx.send('Specify a wait time in minutes')
+            return
 
-            await ctx.send(f'Random post delay set to {arg} minutes')
-        else:
-            await ctx.send('Specify a wait time e.g. `$wait 5`')
+        self.bots[ctx.guild.id].random_wait = minutes_to_wait
+        await ctx.send(f'Random post delay set to {minutes_to_wait} minutes')
 
     @wait.error
     async def wait_error(self, ctx, error):
-        return
+        pass
 
-    @commands.command(
+    @commands.slash_command(
         name='rwait',
-        help='Sets the minimum delay between replying to mentions, in minutes. Example: `$wait 5` sets his mention reply '
-             'internal cooldown to 5 minutes',
-        brief='Sets the delay between replying to mentions, in minutes'
+        description='Sets the minimum delay between replying to mentions, in minutes.'
     )
     @can_ban()
-    async def rwait(self, ctx, arg=None):
-        if arg is not None:
-            self.bots[ctx.guild.id].mention_wait = float(arg)
+    async def rwait(self, ctx, minutes_to_wait: float = None):
+        if minutes_to_wait is None:
+            await ctx.send('Specify a wait time in minutes')
+            return
 
-            await ctx.send(f'Mention reply delay set to {arg} minutes')
-        else:
-            await ctx.send('Specify a wait time e.g. `$rwait 5`')
+        self.bots[ctx.guild.id].mention_wait = minutes_to_wait
+        await ctx.send(f'Mention reply delay set to {minutes_to_wait} minutes')
 
     @rwait.error
     async def rwait_error(self, ctx, error):
-        return
+        pass
 
-    @commands.command(
+    @commands.slash_command(
         name='cd',
-        help='Prints the remaining cooldown for posting random takes or replying to mentions',
-        brief='Prints remaining message cooldowns'
+        description='Prints the remaining cooldown for posting random takes or replying to mentions'
     )
     async def cd(self, ctx):
-        random_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(string=True)
-        random_cd = format.time_to_text(minutes=self.bots[ctx.guild.id].random_wait)
-        mention_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(author=ctx.author, string=True)
-        mention_cd = format.time_to_text(minutes=self.bots[ctx.guild.id].mention_wait)
+        random_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown().__str__()
+        random_cd = 1  # TODO: fix
+        mention_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(author=ctx.author).__str__()
+        mention_cd = 1  # TODO: fix
 
         random_cd_text = f'Random post cd: {random_cd_remaining} of {random_cd}'
         mention_cd_text = f'Mention reply cd ({ctx.author.name}): {mention_cd_remaining} of {mention_cd}'
@@ -144,14 +137,13 @@ class Commands(commands.Cog, name='Commands'):
 
     @cd.error
     async def cd_error(self, ctx, error):
-        return
+        pass
 
-    @commands.command(
+    @commands.slash_command(
         name='status',
-        help='Gives the status of the bot\'s internal parameters',
-        brief='Gives the status of the bot\'s internal parameters'
+        description='Gives the status of the bot\'s internal parameters'
     )
-    async def status(self, ctx):
+    async def status(self, ctx):  # TODO: convert to ephemeral, maybe use embed
         channel = self.client.get_channel(self.bots[ctx.guild.id].channel_id)
 
         if channel is not None:
@@ -162,4 +154,4 @@ class Commands(commands.Cog, name='Commands'):
 
     @status.error
     async def status_error(self, ctx, error):
-        return
+        pass
