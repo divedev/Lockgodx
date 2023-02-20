@@ -35,19 +35,19 @@ async def on_ready():
         await guild.get_member(client.user.id).edit(nick=None)
 
     print('Logged in as {0.user}'.format(client))
+    for guild in client.guilds:
+        print(f'Active in guild: {guild.name}')
 
 
 @client.event
 async def on_message(message):
-    # do not respond to own messages or pins
+    # do not respond to own messages, pins, or other non-user messages
     if (message.author == client.user) \
             or (message.type != discord.MessageType.default):
         return
 
-    guild_id = message.guild.id
-    bot_instance = bots[guild_id]
-
-    await bot_instance.respond(message)
+    # send the message to the bot instance that is present on the guild where the message was sent
+    await bots[message.guild.id].respond(message)
 
 
 @client.event
@@ -55,6 +55,7 @@ async def on_command_error():
     pass
 
 
+# TODO: do we need this dir still? maybe will use it for prompts, settings, etc
 def setup_guilds_dir():
     dirs = [f.name for f in os.scandir() if f.is_dir()]
     if 'guilds' not in dirs:
@@ -67,6 +68,7 @@ def setup_guilds_dir():
             os.mkdir(f'guilds/{guild.id}')
 
 
+# TODO: do we need this?
 def get_bad_words():
     bad_words = []
 

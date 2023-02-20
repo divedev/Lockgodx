@@ -1,13 +1,16 @@
 import math
 import time
 
+import model
+
 
 class Bot:
 
     def __init__(self, client, guild_id):
         self.client = client
+        self.model = model.Model()
 
-        self.channel_id = ''
+        self.active_channel_id = ''
         self.guild_id = guild_id
 
         # TODO: change these after dev
@@ -28,6 +31,9 @@ class Bot:
         self.previous_messages = []
 
     async def respond(self, message=None):
+        if message.channel.id != self.active_channel_id:
+            return
+
         self.msgs_waited += 1
 
         # respond to mentions if ready
@@ -45,7 +51,7 @@ class Bot:
         # check if there is an outstanding cooldown for the user
         if self.cooldown_check(self.user_mention_times.get(message.author.id, 0), self.mention_wait):
             async with message.channel.typing():
-                await message.reply(self.generate_take(message=message))
+                await message.reply(await self.generate_take(message=message))
 
         self.start_reply_cd(message.author)
 
@@ -55,7 +61,7 @@ class Bot:
         async with message.channel.typing():
             self.time_of_random = time.time()
 
-            output = f"test: {message.content}"  # TODO: put openai response here
+            output = self.generate_take(message)
 
             self.msgs_waited = 0  # reset the anti-spam message counter to 0
 
@@ -66,7 +72,8 @@ class Bot:
 
     def generate_take(self, message=None) -> str:
         # TODO: put openai response here
-        return f"test: {message.content}"
+        response = self.model.respond(message.content)
+        return response
 
     def start_random_cd(self):
         self.time_of_random = time.time()

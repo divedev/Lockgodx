@@ -29,11 +29,11 @@ class Commands(commands.Cog, name='Commands'):
     @can_ban()
     async def set_channel(self, ctx, channel: discord.abc.GuildChannel = None):
         if channel is None:
-            self.bots[ctx.guild.id].channel_id = ctx.channel.id
+            self.bots[ctx.guild.id].active_channel_id = ctx.channel.id
         else:
-            self.bots[ctx.guild.id].channel_id = channel.id
+            self.bots[ctx.guild.id].active_channel_id = channel.id
 
-        active_channel_name = self.client.get_channel(self.bots[ctx.guild.id].channel_id).mention
+        active_channel_name = self.client.get_channel(self.bots[ctx.guild.id].active_channel_id).mention
         await ctx.respond(f'Now active in {active_channel_name}')
 
     @set_channel.error
@@ -145,7 +145,7 @@ class Commands(commands.Cog, name='Commands'):
         description='Gives the status of the bot\'s internal parameters'
     )
     async def status(self, ctx):  # TODO: convert to ephemeral, maybe use embed
-        channel = self.client.get_channel(self.bots[ctx.guild.id].channel_id)
+        channel = self.client.get_channel(self.bots[ctx.guild.id].active_channel_id)
 
         if channel is not None:
             status_text = f'LGX STATUS\n\n**Active channel**: {channel.mention}\n' + self.bots[ctx.guild.id].status(ctx.author)
