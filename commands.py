@@ -1,3 +1,4 @@
+import discord.abc
 from discord.ext import commands
 
 
@@ -26,14 +27,14 @@ class Commands(commands.Cog, name='Commands'):
         description='Sets the active channel for the bot. Must be specified before takes can be posted.',
     )
     @can_ban()
-    async def set_channel(self, ctx, arg: str = None):
-        if arg is None:
+    async def set_channel(self, ctx, channel: discord.abc.GuildChannel = None):
+        if channel is None:
             self.bots[ctx.guild.id].channel_id = ctx.channel.id
         else:
-            self.bots[ctx.guild.id].channel_id = int(arg[2:-1])
+            self.bots[ctx.guild.id].channel_id = channel.id
 
         active_channel_name = self.client.get_channel(self.bots[ctx.guild.id].channel_id).mention
-        await ctx.send(f'Now active in {active_channel_name}')
+        await ctx.respond(f'Now active in {active_channel_name}')
 
     @set_channel.error
     async def set_channel_error(self, ctx, error):
@@ -44,17 +45,17 @@ class Commands(commands.Cog, name='Commands'):
         description='Disables the bot from posting takes'
     )
     @can_ban()
-    async def disable(self, ctx, arg: str = None):
-        if arg is None:
+    async def disable(self, ctx, disable_type: discord.Option(str, choices=['takes', 'replies', 'both']) = None):
+        if disable_type is None:
             self.bots[ctx.guild.id].takes_enabled = False
             self.bots[ctx.guild.id].replies_enabled = False
-            await ctx.send('Takes and replies disabled')
-        elif arg == 'replies':
+            await ctx.respond('Takes and replies disabled')
+        elif disable_type == 'replies':
             self.bots[ctx.guild.id].replies_enabled = False
-            await ctx.send('Replies disabled')
-        elif arg == 'takes':
+            await ctx.respond('Replies disabled')
+        elif disable_type == 'takes':
             self.bots[ctx.guild.id].takes_enabled = False
-            await ctx.send('Takes disabled')
+            await ctx.respond('Takes disabled')
         else:
             pass
 
@@ -67,18 +68,18 @@ class Commands(commands.Cog, name='Commands'):
         description='Enables the bot to post takes'
     )
     @can_ban()
-    async def enable(self, ctx, arg: str = None):
+    async def enable(self, ctx, enable_type: discord.Option(str, choices=['takes', 'replies', 'both']) = None):
         bot = self.bots[ctx.guild.id]
-        if arg is None:
+        if enable_type is None:
             bot.takes_enabled = True
             bot.replies_enabled = True
-            await ctx.send('Takes and replies enabled')
-        elif arg == 'replies':
+            await ctx.respond('Takes and replies enabled')
+        elif enable_type == 'replies':
             bot.replies_enabled = True
-            await ctx.send('Replies enabled')
-        elif arg == 'takes':
+            await ctx.respond('Replies enabled')
+        elif enable_type == 'takes':
             bot.takes_enabled = True
-            await ctx.send('Takes enabled')
+            await ctx.respond('Takes enabled')
         else:
             pass
 
@@ -93,11 +94,11 @@ class Commands(commands.Cog, name='Commands'):
     @can_ban()
     async def wait(self, ctx, minutes_to_wait: float = None):
         if minutes_to_wait is None:
-            await ctx.send('Specify a wait time in minutes')
+            await ctx.respond('Specify a wait time in minutes')
             return
 
         self.bots[ctx.guild.id].random_wait = minutes_to_wait
-        await ctx.send(f'Random post delay set to {minutes_to_wait} minutes')
+        await ctx.respond(f'Random post delay set to {minutes_to_wait} minutes')
 
     @wait.error
     async def wait_error(self, ctx, error):
@@ -110,11 +111,11 @@ class Commands(commands.Cog, name='Commands'):
     @can_ban()
     async def rwait(self, ctx, minutes_to_wait: float = None):
         if minutes_to_wait is None:
-            await ctx.send('Specify a wait time in minutes')
+            await ctx.respond('Specify a wait time in minutes')
             return
 
         self.bots[ctx.guild.id].mention_wait = minutes_to_wait
-        await ctx.send(f'Mention reply delay set to {minutes_to_wait} minutes')
+        await ctx.respond(f'Mention reply delay set to {minutes_to_wait} minutes')
 
     @rwait.error
     async def rwait_error(self, ctx, error):
@@ -133,7 +134,7 @@ class Commands(commands.Cog, name='Commands'):
         random_cd_text = f'Random post cd: {random_cd_remaining} of {random_cd}'
         mention_cd_text = f'Mention reply cd ({ctx.author.name}): {mention_cd_remaining} of {mention_cd}'
 
-        await ctx.send(f'{random_cd_text}\n{mention_cd_text}')
+        await ctx.respond(f'{random_cd_text}\n{mention_cd_text}', ephemeral=True)
 
     @cd.error
     async def cd_error(self, ctx, error):
@@ -150,7 +151,7 @@ class Commands(commands.Cog, name='Commands'):
             status_text = f'LGX STATUS\n\n**Active channel**: {channel.mention}\n' + self.bots[ctx.guild.id].status(ctx.author)
         else:
             status_text = f'LGX STATUS\n\n**Active channel**: none\n' + self.bots[ctx.guild.id].status(ctx.author)
-        await ctx.reply(status_text)
+        await ctx.respond(status_text, ephemeral=True)
 
     @status.error
     async def status_error(self, ctx, error):

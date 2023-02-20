@@ -10,9 +10,10 @@ class Bot:
         self.channel_id = ''
         self.guild_id = guild_id
 
-        self.random_wait = 5
-        self.msgs_wait = 10
-        self.mention_wait = 2
+        # TODO: change these after dev
+        self.random_wait = 0
+        self.msgs_wait = 0
+        self.mention_wait = 0
 
         self.bad_words = []    # TODO: will we even need this
 
@@ -26,41 +27,35 @@ class Bot:
         self.msgs_waited = 0
         self.previous_messages = []
 
-    def respond(self, message=None):
+    async def respond(self, message=None):
+        self.msgs_waited += 1
+
         # respond to mentions if ready
-        if self.client.user in message.mentions:
-            self.respond_to_mention(message)
+        if self.client.user in message.mentions\
+                and self.replies_enabled:
+            await self.respond_to_mention(message)
+            return
 
         # post randomly if ready
-        if self.cooldown_check(self.time_of_random, self.random_wait) and (self.msgs_waited >= self.msgs_wait):
-            self.respond_randomly(message)
+        if self.cooldown_check(self.time_of_random, self.random_wait) and (self.msgs_waited >= self.msgs_wait)\
+                and self.takes_enabled:
+            await self.respond_randomly(message)
 
     async def respond_to_mention(self, message):
         # check if there is an outstanding cooldown for the user
-        if message.author.id in self.user_mention_times.keys():
-            # check if the cooldown time has elapsed
-            if self.cooldown_check(self.user_mention_times[message.author.id], self.mention_wait):
-                async with message.channel.typing():
-                    output = self.generate_take(message=message)  # TODO: put openai response here
-
-                    await message.reply(output)
-            # do not reply if user is on cooldown
-            else:
-                return
-        else:
+        if self.cooldown_check(self.user_mention_times.get(message.author.id, 0), self.mention_wait):
             async with message.channel.typing():
-                take = self.generate_take(message=message)  # TODO: put openai response here
-                await message.reply(take)
+                await message.reply(self.generate_take(message=message))
 
         self.start_reply_cd(message.author)
 
         return
 
-    async def repond_randomly(self, message):
+    async def respond_randomly(self, message):
         async with message.channel.typing():
             self.time_of_random = time.time()
 
-            output = self.generate_take()  # TODO: put openai response here
+            output = f"test: {message.content}"  # TODO: put openai response here
 
             self.msgs_waited = 0  # reset the anti-spam message counter to 0
 
@@ -68,9 +63,10 @@ class Bot:
                 await message.channel.send(output)
             else:
                 pass
+
     def generate_take(self, message=None) -> str:
         # TODO: put openai response here
-        pass
+        return f"test: {message.content}"
 
     def start_random_cd(self):
         self.time_of_random = time.time()

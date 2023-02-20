@@ -18,18 +18,15 @@ intents.message_content = True
 intents.emojis_and_stickers = True
 intents.reactions = True
 
-client = discord.Bot(command_prefix='$', intents=intents)
+client = discord.Bot(intents=intents)
 
 bots = {}
 
 
 @client.event
-async def setup_hook():
+async def on_ready():
     setup_guilds_dir()
 
-
-@client.event
-async def on_ready():
     for guild in client.guilds:
         bots[guild.id] = bot.Bot(client, guild.id)
 
@@ -50,11 +47,7 @@ async def on_message(message):
     guild_id = message.guild.id
     bot_instance = bots[guild_id]
 
-    if message.content.startswith('$'):
-        await client.process_commands(message)
-        return
-
-    bot_instance.respond(message)
+    await bot_instance.respond(message)
 
 
 @client.event
