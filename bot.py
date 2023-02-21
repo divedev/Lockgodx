@@ -1,3 +1,4 @@
+import json
 import math
 import time
 
@@ -10,25 +11,35 @@ class Bot:
 
     def __init__(self, client, guild_id):
         self.client = client
-        self.model = model.Model()
-
-        self.active_channel_id = ''
         self.guild_id = guild_id
 
-        # TODO: change these after dev
-        self.random_wait = 0
-        self.msgs_wait = 0
-        self.mention_wait = 0
+        # openai interaction
+        self.model = model.Model()
 
-        self.takes_enabled = True
+        # user-changeable settings. initialize to defaults then load any saved values
+        self.active_channel_id = ''
+        self.post_cd = 5
+        self.reply_cd = 5
+        self.msgs_wait = 10  # TODO: reimplement this
+        self.posts_enabled = True
         self.replies_enabled = True
-        self.learn = True
-        self.guild_dir = f'guilds/{guild_id}'
+        self.load_settings(guild_id)
 
-        self.user_mention_times = {}
-        self.time_of_random = time.time() - self.random_wait * 60
+        # cooldown trackers
+        self.user_reply_times = {}
+        self.last_post_time = time.time() - self.post_cd * 60
         self.msgs_waited = 0
-        self.previous_messages = []
+
+    def load_settings(self, guild_id:int):
+        with open(f'guilds/{guild_id}/settings.json', 'r') as settings_file:
+            data = json.load(settings_file)
+
+            self.active_channel_id = data.get('channel', '')
+            self.post_cd = data.get('post_cd', 5)
+            self.reply_cd = data.get('reply_cd', 5)
+            self.msgs_wait = data.get('msgs_wait', 10)
+            self.posts_enabled = data.get('posts_enabled', True)
+            self.replies_enabled = data.get('replies_enabled', True)
 
     async def respond(self, message=None):
         if message.channel.id != self.active_channel_id:
@@ -39,29 +50,29 @@ class Bot:
         # respond to mentions if ready
         if self.client.user in message.mentions\
                 and self.replies_enabled:
-            await self.respond_to_mention(message)
+            await self.reply(message)
             return
 
         # post randomly if ready
-        if self.cooldown_check(self.time_of_random, self.random_wait) and (self.msgs_waited >= self.msgs_wait)\
-                and self.takes_enabled:
-            await self.respond_randomly(message)
+        if self.cooldown_check(self.last_post_time, self.post_cd) and (self.msgs_waited >= self.msgs_wait)\
+                and self.posts_enabled:
+            await self.post(message)
 
-    async def respond_to_mention(self, message):
+    async def reply(self, message):
         # check if there is an outstanding cooldown for the user
-        if self.cooldown_check(self.user_mention_times.get(message.author.id, 0), self.mention_wait):
+        if self.cooldown_check(self.user_reply_times.get(message.author.id, 0), self.reply_cd):
             async with message.channel.typing():
-                await message.reply(await self.generate_take(message=message))
+                await message.reply(self.generate_response_text(message=message))
 
         self.start_reply_cd(message.author)
 
         return
 
-    async def respond_randomly(self, message):
+    async def post(self, message):
         async with message.channel.typing():
-            self.time_of_random = time.time()
+            self.last_post_time = time.time()
 
-            output = self.generate_take(message)
+            output = self.generate_response_text(message)
 
             self.msgs_waited = 0  # reset the anti-spam message counter to 0
 
@@ -70,33 +81,25 @@ class Bot:
             else:
                 pass
 
-    def generate_take(self, message=None) -> str:
-        # TODO: put openai response here
+    def generate_response_text(self, message: discord.message = None) -> str:
         response = self.model.respond(message.content)
         return response
 
-    def start_random_cd(self):
-        self.time_of_random = time.time()
+    def start_post_cd(self):
+        self.last_post_time = time.time()
 
     def start_reply_cd(self, author):
-        self.user_mention_times[author.id] = time.time()
-
-    def status(self, author):
-        # TODO: make ephemeral, convert to an embed
-        status = f'**Enabled features**: {", ".join(str(x) for x in self.get_enabled_functions())}\n' \
-                 f'**Mention reply cooldown** ({author.name}): {self.get_remaining_cooldown(author=author).__str__()} ' \
-                    f'of {math.floor(self.mention_wait)}m\n' \
-                 f'**Random take cooldown**: {self.get_remaining_cooldown().__str__()} of {math.floor(self.random_wait)}m\n'
-        return status
+        self.user_reply_times[author.id] = time.time()
 
     def cooldown_check(self, time_of_cooldown, cooldown_length):
         return (time.time() - time_of_cooldown) > cooldown_length * 60
 
+    # returns post cooldown if not provided with a member, or the user's reply cooldown otherwise
     def get_remaining_cooldown(self, author: discord.Member = None) -> int:
         if author is None:
-            sec_remaining = max(0, (self.time_of_random + self.random_wait * 60) - time.time())
-        elif author.id in self.user_mention_times.keys():
-            sec_remaining = max(0, (self.user_mention_times[author.id] + self.mention_wait * 60) - time.time())
+            sec_remaining = max(0, (self.last_post_time + self.post_cd * 60) - time.time())
+        elif author.id in self.user_reply_times.keys():
+            sec_remaining = max(0, (self.user_reply_times[author.id] + self.reply_cd * 60) - time.time())
         else:
             sec_remaining = 0
 
@@ -107,8 +110,8 @@ class Bot:
     def get_enabled_functions(self) -> list[str]:
         enabled = []
 
-        if self.takes_enabled:
-            enabled.append('takes')
+        if self.posts_enabled:
+            enabled.append('posts')
         if self.replies_enabled:
             enabled.append('replies')
         # TODO: add DALL E image generation enabled status
@@ -118,10 +121,14 @@ class Bot:
 
         return enabled
 
-    # TODO: will we even need this
-    def no_bad_words(self, message):
-        for word in message.split(' '):
-            if word.lower() in self.bad_words:
-                return False
+    def update_setting(self, setting: str, val):
+        settings_file_path = f'guilds/{self.guild_id}/settings.json'
 
-        return True
+        with open(settings_file_path, 'r') as settings_file:
+            settings_data = json.load(settings_file)
+
+            if setting in settings_data:
+                settings_data[setting] = val
+
+        with open(settings_file_path, 'w') as settings_file:
+            json.dump(settings_data, settings_file, indent=2)

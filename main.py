@@ -1,3 +1,4 @@
+import json
 import os
 
 import discord
@@ -26,7 +27,6 @@ bots = {}
 @client.event
 async def on_ready():
     setup_guilds_dir()
-    load_settings()
 
     for guild in client.guilds:
         bots[guild.id] = bot.Bot(client, guild.id)
@@ -40,17 +40,11 @@ async def on_ready():
 @client.event
 async def on_message(message):
     # do not respond to own messages, pins, or other non-user messages
-    if (message.author == client.user) \
-            or (message.type != discord.MessageType.default):
+    if (message.author == client.user) or (message.type != discord.MessageType.default):
         return
 
     # send the message to the bot instance that is present on the guild where the message was sent
     await bots[message.guild.id].respond(message)
-
-
-@client.event
-async def on_command_error():
-    pass
 
 
 def setup_guilds_dir():
@@ -65,12 +59,18 @@ def setup_guilds_dir():
             create_new_guild_dir(guild.id)
 
 
-def create_new_guild_dir(guild_id: int):  # TODO: make a settings json
+def create_new_guild_dir(guild_id: int):
     os.mkdir(f'guilds/{guild_id}')
     os.mkdir(f'guilds/{guild_id}/prompts')
 
-def load_settings():
-    pass  # TODO: implement this
+    # make a new settings file with default values
+    with open(f'guilds/{guild_id}/settings.json', 'w', newline='\n') as json_file:
+        json.dump({'channel': None,
+                   'posts_enabled': True,
+                   'replies_enabled': True,
+                   'post_cd': 5,
+                   'reply_cd': 5,
+                   'msgs_wait':10}, json_file, indent=2)
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))
