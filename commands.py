@@ -121,20 +121,25 @@ class Commands(commands.Cog, name='Commands'):
     async def rwait_error(self, ctx, error):
         pass
 
+    def get_cd_text(self, ctx: discord.ApplicationContext):
+        bot = self.bots[ctx.guild.id]
+
+        random_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown().__str__()
+        random_cd = (bot.random_wait * 60).__str__()
+        mention_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(author=ctx.author).__str__()
+        mention_cd = (bot.mention_wait * 60).__str__()
+
+        random_cd_text = f'Random post cd: {random_cd_remaining}s of {random_cd}s'
+        mention_cd_text = f'Reply cd ({ctx.author.name}): {mention_cd_remaining}s of {mention_cd}s'
+
+        return f'{random_cd_text}\n{mention_cd_text}'
+
     @commands.slash_command(
         name='cd',
         description='Prints the remaining cooldown for posting random takes or replying to mentions'
     )
     async def cd(self, ctx):
-        random_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown().__str__()
-        random_cd = 1  # TODO: fix
-        mention_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(author=ctx.author).__str__()
-        mention_cd = 1  # TODO: fix
-
-        random_cd_text = f'Random post cd: {random_cd_remaining} of {random_cd}'
-        mention_cd_text = f'Mention reply cd ({ctx.author.name}): {mention_cd_remaining} of {mention_cd}'
-
-        await ctx.respond(f'{random_cd_text}\n{mention_cd_text}', ephemeral=True)
+        await ctx.respond(self.get_cd_text(ctx), ephemeral=True)
 
     @cd.error
     async def cd_error(self, ctx, error):
@@ -144,14 +149,17 @@ class Commands(commands.Cog, name='Commands'):
         name='status',
         description='Gives the status of the bot\'s internal parameters'
     )
-    async def status(self, ctx):  # TODO: convert to ephemeral, maybe use embed
-        channel = self.client.get_channel(self.bots[ctx.guild.id].active_channel_id)
+    async def status(self, ctx):
+        bot = self.bots[ctx.guild.id]
+        bot_channel = self.client.get_channel(bot.active_channel_id)
 
-        if channel is not None:
-            status_text = f'LGX STATUS\n\n**Active channel**: {channel.mention}\n' + self.bots[ctx.guild.id].status(ctx.author)
-        else:
-            status_text = f'LGX STATUS\n\n**Active channel**: none\n' + self.bots[ctx.guild.id].status(ctx.author)
-        await ctx.respond(status_text, ephemeral=True)
+        embed = discord.Embed(title="Status", description="")
+        embed.add_field(name="Active channel", value=bot_channel.mention if bot_channel is not None else "none")
+        embed.add_field(name="Enabled features", value='\n'.join(feat for feat in bot.get_enabled_functions()))
+        embed.add_field(name="Personality", value="")
+        embed.add_field(name="Cooldowns", value=self.get_cd_text(ctx))
+
+        await ctx.respond(embed=embed, ephemeral=True)
 
     @status.error
     async def status_error(self, ctx, error):

@@ -1,6 +1,8 @@
 import math
 import time
 
+import discord
+
 import model
 
 
@@ -17,8 +19,6 @@ class Bot:
         self.random_wait = 0
         self.msgs_wait = 0
         self.mention_wait = 0
-
-        self.bad_words = []    # TODO: will we even need this
 
         self.takes_enabled = True
         self.replies_enabled = True
@@ -92,7 +92,7 @@ class Bot:
     def cooldown_check(self, time_of_cooldown, cooldown_length):
         return (time.time() - time_of_cooldown) > cooldown_length * 60
 
-    def get_remaining_cooldown(self, author=None) -> int:
+    def get_remaining_cooldown(self, author: discord.Member = None) -> int:
         if author is None:
             sec_remaining = max(0, (self.time_of_random + self.random_wait * 60) - time.time())
         elif author.id in self.user_mention_times.keys():
@@ -104,15 +104,16 @@ class Bot:
 
         return ret
 
-    def get_enabled_functions(self):
+    def get_enabled_functions(self) -> list[str]:
         enabled = []
 
         if self.takes_enabled:
             enabled.append('takes')
         if self.replies_enabled:
             enabled.append('replies')
+        # TODO: add DALL E image generation enabled status
 
-        if enabled.count() < 1:
+        if len(enabled) < 1:
             enabled = 'none'
 
         return enabled

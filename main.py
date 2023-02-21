@@ -26,12 +26,10 @@ bots = {}
 @client.event
 async def on_ready():
     setup_guilds_dir()
+    load_settings()
 
     for guild in client.guilds:
         bots[guild.id] = bot.Bot(client, guild.id)
-
-        bots[guild.id].bad_words = get_bad_words()
-
         await guild.get_member(client.user.id).edit(nick=None)
 
     print('Logged in as {0.user}'.format(client))
@@ -55,7 +53,6 @@ async def on_command_error():
     pass
 
 
-# TODO: do we need this dir still? maybe will use it for prompts, settings, etc
 def setup_guilds_dir():
     dirs = [f.name for f in os.scandir() if f.is_dir()]
     if 'guilds' not in dirs:
@@ -65,23 +62,15 @@ def setup_guilds_dir():
 
     for guild in client.guilds:
         if str(guild.id) not in guild_id_dirs:
-            os.mkdir(f'guilds/{guild.id}')
+            create_new_guild_dir(guild.id)
 
 
-# TODO: do we need this?
-def get_bad_words():
-    bad_words = []
+def create_new_guild_dir(guild_id: int):  # TODO: make a settings json
+    os.mkdir(f'guilds/{guild_id}')
+    os.mkdir(f'guilds/{guild_id}/prompts')
 
-    try:
-        with open(bad_words_file, 'r') as f:
-            for line in f.readlines():
-                if len(line.strip()) > 0:
-                    bad_words.append(line.strip())
-    except:
-        print("Could not load bad words file. "
-              "Create 'bad_words.txt' in the main directory to enable bad word filtering.")
-
-    return bad_words
+def load_settings():
+    pass  # TODO: implement this
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))
