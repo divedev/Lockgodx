@@ -47,13 +47,12 @@ class Bot:
 
         self.msgs_waited += 1
 
-        # respond to mentions if ready
-        if self.client.user in message.mentions\
-                and self.replies_enabled:
+        # reply if bot mentioned
+        if self.client.user in message.mentions and self.replies_enabled:
             await self.reply(message)
             return
 
-        # post randomly if ready
+        # post in conversation
         if self.cooldown_check(self.last_post_time, self.post_cd) and (self.msgs_waited >= self.msgs_wait)\
                 and self.posts_enabled:
             await self.post(message)
@@ -64,7 +63,7 @@ class Bot:
             async with message.channel.typing():
                 await message.reply(self.generate_response_text(message=message))
 
-        self.start_reply_cd(message.author)
+            self.start_reply_cd(message.author)
 
         return
 
