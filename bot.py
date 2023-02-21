@@ -73,10 +73,10 @@ class Bot:
 
             output = self.generate_response_text(message)
 
-            self.msgs_waited = 0  # reset the anti-spam message counter to 0
-
             if output is not None:
                 await message.channel.send(output)
+                self.msgs_waited = 0  # reset the anti-spam message counter to 0
+                self.start_post_cd()
             else:
                 pass
 
