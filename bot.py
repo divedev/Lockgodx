@@ -8,15 +8,23 @@ import model
 
 
 class Bot:
+    """
+    A class to represent a Discord bot that lives in a specific guild. The bot keeps track of its own cooldowns and
+    user settings on a per-guild basis.
 
-    def __init__(self, client, guild_id):
+    It utilizes an OpenAI endpoint to generate responses to user conversations or direct mentions by users. The bot's
+    personality is customizable via prompts, which are constructed from a combination of base prompts, recent
+    conversation context, and a seed message from a user.
+    """
+
+    def __init__(self, client: discord.Bot, guild_id: int):
         self.client = client
         self.guild_id = guild_id
 
         # openai interaction
         self.model = model.Model()
 
-        # user-changeable settings. initialize to defaults then load any saved values
+        # user-changeable settings. initialize to defaults (for safety) then load any saved values
         self.active_channel_id = ''
         self.post_cd = 5
         self.reply_cd = 5
@@ -30,7 +38,7 @@ class Bot:
         self.last_post_time = time.time() - self.post_cd * 60
         self.msgs_waited = 0
 
-    def load_settings(self, guild_id:int):
+    def load_settings(self, guild_id: int):
         with open(f'guilds/{guild_id}/settings.json', 'r') as settings_file:
             data = json.load(settings_file)
 
@@ -75,7 +83,7 @@ class Bot:
 
             if output is not None:
                 await message.channel.send(output)
-                self.msgs_waited = 0  # reset the anti-spam message counter to 0
+                self.msgs_waited = 0
                 self.start_post_cd()
             else:
                 pass

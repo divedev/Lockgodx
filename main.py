@@ -70,7 +70,7 @@ def create_new_guild_dir(guild_id: int):
                    'replies_enabled': True,
                    'post_cd': 5,
                    'reply_cd': 5,
-                   'msgs_wait':10}, json_file, indent=2)
+                   'msgs_wait': 10}, json_file, indent=2)
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))
