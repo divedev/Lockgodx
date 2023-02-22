@@ -150,6 +150,27 @@ class Commands(commands.Cog, name='Commands'):
     async def set_reply_cd_error(self, ctx, error):
         pass
 
+    @commands.slash_command(
+        name='set_msgs_wait',
+        description='Sets the number of user messages to wait between posting.'
+    )
+    @can_ban()
+    async def set_msgs_wait(self, ctx, msgs_to_wait: int = None):
+        bot = self.bots[ctx.guild.id]
+
+        if msgs_to_wait is None:
+            await ctx.respond('Specify the number of messages to wait between posts')
+            return
+
+        bot.msgs_wait = msgs_to_wait
+        await ctx.respond(f'Waiting {msgs_to_wait} messages between posts')
+
+        bot.update_setting('msgs_wait', msgs_to_wait)
+
+    @set_msgs_wait.error
+    async def set_msgs_wait_error(self, ctx, error):
+        pass
+
     def get_cd_text(self, ctx: discord.ApplicationContext):
         bot = self.bots[ctx.guild.id]
 

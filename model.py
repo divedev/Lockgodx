@@ -15,9 +15,9 @@ class Model:  # TODO: implement base prompt building, saving, and swapping
             model="text-davinci-003",
             prompt=message_text,
             echo=False,
-            max_tokens=256,
+            max_tokens=400,
             frequency_penalty=1,
-            temperature=0.5)
+            temperature=0.95)
 
         response = completion['choices'][0]['text']
 

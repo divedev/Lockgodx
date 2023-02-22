@@ -10,16 +10,21 @@ import commands
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
-bad_words_file = 'bad_words.txt'
 
-intents = discord.Intents.default()
-intents.members = True
-intents.messages = True
-intents.message_content = True
-intents.emojis_and_stickers = True
-intents.reactions = True
+def get_intents() -> discord.Intents:
 
-client = discord.Bot(intents=intents)
+    intents = discord.Intents.default()
+    intents.messages = True
+    intents.message_content = True
+    intents.members = True
+    intents.typing = True
+    intents.reactions = True
+    intents.emojis_and_stickers = True
+
+    return intents
+
+
+client = discord.Bot(intents=get_intents())
 
 bots = {}
 
