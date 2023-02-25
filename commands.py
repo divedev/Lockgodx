@@ -1,6 +1,8 @@
 import discord.abc
 from discord.ext import commands
 
+from traits_menu import TraitsMenu
+
 
 def can_ban():
     async def predicate(ctx):
@@ -213,4 +215,15 @@ class Commands(commands.Cog, name='Commands'):
 
     @status.error
     async def status_error(self, ctx, error):
+        pass
+
+    @commands.slash_command(
+        name='traits',
+        description='Set the bot\'s personality traits'
+    )
+    async def traits(self, ctx):
+        await ctx.respond(view=TraitsMenu(), ephemeral=True)
+
+    @traits.error
+    async def traits_error(self, ctx, error):
         pass
