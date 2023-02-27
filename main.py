@@ -52,6 +52,9 @@ async def on_message(message):
     await bots[message.guild.id].respond(message)
 
 
+# if the main directory doesn't have a 'guilds' directory, create it. if they do have a 'guilds' directory,
+# make sure that 'guilds' contains a directory for each guild the bot participates in. if there are any guilds
+# that do not have their own directory, create one
 def setup_guilds_dir():
     dirs = [f.name for f in os.scandir() if f.is_dir()]
     if 'guilds' not in dirs:
@@ -64,11 +67,11 @@ def setup_guilds_dir():
             create_new_guild_dir(guild.id)
 
 
+# set up guild-specific information like bot settings and trait options, initialized to default values
 def create_new_guild_dir(guild_id: int):
     os.mkdir(f'guilds/{guild_id}')
-    os.mkdir(f'guilds/{guild_id}/prompts')
+    os.mkdir(f'guilds/{guild_id}/traits')
 
-    # make a new settings file with default values
     with open(f'guilds/{guild_id}/settings.json', 'w', newline='\n') as json_file:
         json.dump({'channel': None,
                    'posts_enabled': True,
@@ -76,6 +79,17 @@ def create_new_guild_dir(guild_id: int):
                    'post_cd': 5,
                    'reply_cd': 5,
                    'msgs_wait': 10}, json_file, indent=2)
+
+    default_trait_options = load_default_trait_options()
+    for trait_option_type in default_trait_options.keys():
+        with open(f'guilds/{guild_id}/traits/{trait_option_type}.json', 'w', newline='\n') as json_file:
+            json.dump(default_trait_options[trait_option_type], json_file, indent=2)
+
+
+def load_default_trait_options() -> dict:
+    # TODO: handle errors
+    with open('default_trait_options.json', 'r') as json_file:
+        return json.load(json_file)
 
 
 client.add_cog(commands.Commands(client=client, bots=bots))

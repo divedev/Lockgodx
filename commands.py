@@ -1,7 +1,7 @@
 import discord.abc
 from discord.ext import commands
 
-from traits_menu import TraitsMenu
+from traits_view import TraitsView
 
 
 def can_ban():
@@ -208,7 +208,7 @@ class Commands(commands.Cog, name='Commands'):
         embed = discord.Embed(title="Status", description="")
         embed.add_field(name="Active channel", value="none" if bot_channel is None else bot_channel.mention)
         embed.add_field(name="Enabled features", value='\n'.join(feat for feat in bot.get_enabled_functions()))
-        embed.add_field(name="Personality", value="")
+        embed.add_field(name="Personality", value="")  # TODO: implement
         embed.add_field(name="Cooldowns", value=self.get_cd_text(ctx))
 
         await ctx.respond(embed=embed, ephemeral=True)
@@ -221,8 +221,9 @@ class Commands(commands.Cog, name='Commands'):
         name='traits',
         description='Set the bot\'s personality traits'
     )
-    async def traits(self, ctx):
-        await ctx.respond(view=TraitsMenu(), ephemeral=True)
+    async def traits(self, ctx: discord.ApplicationContext):
+        bot = self.bots[ctx.guild.id]
+        await ctx.respond(view=TraitsView(bot), ephemeral=True)
 
     @traits.error
     async def traits_error(self, ctx, error):

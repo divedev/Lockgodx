@@ -17,7 +17,8 @@ class Model:  # TODO: implement base prompt building, saving, and swapping
             echo=False,
             max_tokens=400,
             frequency_penalty=1,
-            temperature=0.95)
+            presence_penalty=1.5,
+            temperature=0.75)
 
         response = completion['choices'][0]['text']
 

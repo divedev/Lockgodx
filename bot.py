@@ -28,7 +28,7 @@ class Bot:
         self.active_channel_id = ''
         self.post_cd = 5
         self.reply_cd = 5
-        self.msgs_wait = 10  # TODO: reimplement this
+        self.msgs_wait = 10
         self.posts_enabled = True
         self.replies_enabled = True
         self.load_settings(guild_id)
@@ -49,7 +49,7 @@ class Bot:
             self.posts_enabled = data.get('posts_enabled', True)
             self.replies_enabled = data.get('replies_enabled', True)
 
-    async def respond(self, message=None):
+    async def respond(self, message: discord.message = None):
         if message.channel.id != self.active_channel_id:
             return
 
@@ -65,7 +65,7 @@ class Bot:
                 and self.posts_enabled:
             await self.post(message)
 
-    async def reply(self, message):
+    async def reply(self, message: discord.message):
         # check if there is an outstanding cooldown for the user
         if self.cooldown_check(self.user_reply_times.get(message.author.id, 0), self.reply_cd):
             async with message.channel.typing():
@@ -75,7 +75,7 @@ class Bot:
 
         return
 
-    async def post(self, message):
+    async def post(self, message: discord.message):
         async with message.channel.typing():
             self.last_post_time = time.time()
 
@@ -95,10 +95,10 @@ class Bot:
     def start_post_cd(self):
         self.last_post_time = time.time()
 
-    def start_reply_cd(self, author):
+    def start_reply_cd(self, author: discord.user):
         self.user_reply_times[author.id] = time.time()
 
-    def cooldown_check(self, time_of_cooldown, cooldown_length):
+    def cooldown_check(self, time_of_cooldown, cooldown_length) -> bool:
         return (time.time() - time_of_cooldown) > cooldown_length * 60
 
     # returns post cooldown if not provided with a member, or the user's reply cooldown otherwise
