@@ -1,3 +1,5 @@
+import json
+
 import discord.abc
 from discord.ext import commands
 
@@ -40,7 +42,7 @@ class Commands(commands.Cog, name='Commands'):
         active_channel_name = self.client.get_channel(bot.active_channel_id).mention
         await ctx.respond(f'Now active in {active_channel_name}')
 
-        bot.update_setting('channel', bot.active_channel_id)
+        update_setting(ctx.guild.id, 'channel', bot.active_channel_id)
 
     @set_channel.error
     async def set_channel_error(self, ctx, error):
@@ -59,18 +61,18 @@ class Commands(commands.Cog, name='Commands'):
             self.bots[ctx.guild.id].replies_enabled = False
             await ctx.respond('Posts and replies disabled')
 
-            bot.update_setting('posts_enabled', False)
-            bot.update_setting('replies_enabled', False)
+            update_setting(ctx.guild.id, 'posts_enabled', False)
+            update_setting(ctx.guild.id, 'replies_enabled', False)
         elif disable_type == 'replies':
             self.bots[ctx.guild.id].replies_enabled = False
             await ctx.respond('Replies disabled')
 
-            bot.update_setting('replies_enabled', False)
+            update_setting(ctx.guild.id, 'replies_enabled', False)
         elif disable_type == 'posts':
             self.bots[ctx.guild.id].posts_enabled = False
             await ctx.respond('Posts disabled')
 
-            bot.update_setting('posts_enabled', False)
+            update_setting(ctx.guild.id, 'posts_enabled', False)
         else:
             pass
 
@@ -91,18 +93,18 @@ class Commands(commands.Cog, name='Commands'):
             bot.replies_enabled = True
             await ctx.respond('Posts and replies enabled')
 
-            bot.update_setting('posts_enabled', True)
-            bot.update_setting('replies_enabled', True)
+            update_setting(ctx.guild.id, 'posts_enabled', True)
+            update_setting(ctx.guild.id, 'replies_enabled', True)
         elif enable_type == 'replies':
             bot.replies_enabled = True
             await ctx.respond('Replies enabled')
 
-            bot.update_setting('replies_enabled', True)
+            update_setting(ctx.guild.id, 'replies_enabled', True)
         elif enable_type == 'posts':
             bot.posts_enabled = True
             await ctx.respond('Posts enabled')
 
-            bot.update_setting('posts_enabled', True)
+            update_setting(ctx.guild.id, 'posts_enabled', True)
         else:
             pass
 
@@ -125,7 +127,7 @@ class Commands(commands.Cog, name='Commands'):
         bot.post_cd = minutes_to_wait
         await ctx.respond(f'Post cooldown set to {minutes_to_wait} minutes')
 
-        bot.update_setting('post_cd', minutes_to_wait)
+        update_setting(ctx.guild.id, 'post_cd', minutes_to_wait)
 
     @set_post_cd.error
     async def set_cd_error(self, ctx, error):
@@ -146,7 +148,7 @@ class Commands(commands.Cog, name='Commands'):
         bot.reply_cd = minutes_to_wait
         await ctx.respond(f'Reply cooldown set to {minutes_to_wait} minutes')
 
-        bot.update_setting('reply_cd', minutes_to_wait)
+        update_setting(ctx.guild.id, 'reply_cd', minutes_to_wait)
 
     @set_reply_cd.error
     async def set_reply_cd_error(self, ctx, error):
@@ -167,7 +169,7 @@ class Commands(commands.Cog, name='Commands'):
         bot.msgs_wait = msgs_to_wait
         await ctx.respond(f'Waiting {msgs_to_wait} messages between posts')
 
-        bot.update_setting('msgs_wait', msgs_to_wait)
+        update_setting(ctx.guild.id, 'msgs_wait', msgs_to_wait)
 
     @set_msgs_wait.error
     async def set_msgs_wait_error(self, ctx, error):
@@ -228,3 +230,17 @@ class Commands(commands.Cog, name='Commands'):
     @traits.error
     async def traits_error(self, ctx, error):
         pass
+
+
+# TODO: handle r/w errors
+def update_setting(guild_id: int, setting: str, val):
+    settings_file_path = f'guilds/{guild_id}/settings.json'
+
+    with open(settings_file_path, 'r') as settings_file:
+        settings_data = json.load(settings_file)
+
+        if setting in settings_data:
+            settings_data[setting] = val
+
+    with open(settings_file_path, 'w') as settings_file:
+        json.dump(settings_data, settings_file, indent=2)

@@ -22,20 +22,8 @@ class TraitsView(discord.ui.View):
         self.guild_id = bot_instance.guild_id
 
         for option_type in TraitsOptionType:
-            options = self.get_options_for_type(option_type)
+            options = get_options_for_type(self.guild_id, option_type)
             self.add_item(TraitsSelect(option_type, options))
-
-    def get_options_for_type(self, option_type: TraitsOptionType) -> list[discord.SelectOption]:
-        ret: list[discord.SelectOption] = []
-
-        with open(f"guilds/{self.guild_id}/traits/{option_type.value}_options.json", "r") as options_json:
-            data = json.load(options_json)
-
-            # TODO: convert descriptions to the actual prompt tokens (should find out how many tokens each trait costs)
-            for label, description in data.items():
-                ret.append(discord.SelectOption(label=label, description=description))
-
-        return ret
 
 
 class TraitsSelect(discord.ui.Select):
@@ -50,3 +38,16 @@ class TraitsSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(invisible=True)
 
+
+# TODO: handle r/w errors
+def get_options_for_type(guild_id: int, option_type: TraitsOptionType) -> list[discord.SelectOption]:
+    ret: list[discord.SelectOption] = []
+
+    with open(f"guilds/{guild_id}/traits/{option_type.value}_options.json", "r") as options_json:
+        data = json.load(options_json)
+
+        # TODO: convert descriptions to the actual prompt tokens (should find out how many tokens each trait costs)
+        for label, description in data.items():
+            ret.append(discord.SelectOption(label=label, description=description))
+
+    return ret

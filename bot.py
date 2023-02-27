@@ -50,6 +50,7 @@ class Bot:
             self.replies_enabled = data.get('replies_enabled', True)
 
     async def respond(self, message: discord.message = None):
+        # only respond to messages in active channel
         if message.channel.id != self.active_channel_id:
             return
 
@@ -61,13 +62,14 @@ class Bot:
             return
 
         # post in conversation
-        if self.cooldown_check(self.last_post_time, self.post_cd) and (self.msgs_waited >= self.msgs_wait)\
+        if cooldown_check(self.last_post_time, self.post_cd) and (self.msgs_waited >= self.msgs_wait)\
                 and self.posts_enabled:
             await self.post(message)
 
+    # respond to messages that mention the bot
     async def reply(self, message: discord.message):
         # check if there is an outstanding cooldown for the user
-        if self.cooldown_check(self.user_reply_times.get(message.author.id, 0), self.reply_cd):
+        if cooldown_check(self.user_reply_times.get(message.author.id, 0), self.reply_cd):
             async with message.channel.typing():
                 await message.reply(self.generate_response_text(message=message))
 
@@ -75,6 +77,7 @@ class Bot:
 
         return
 
+    # respond to messages that do not directly mention the bot
     async def post(self, message: discord.message):
         async with message.channel.typing():
             self.last_post_time = time.time()
@@ -97,9 +100,6 @@ class Bot:
 
     def start_reply_cd(self, author: discord.user):
         self.user_reply_times[author.id] = time.time()
-
-    def cooldown_check(self, time_of_cooldown, cooldown_length) -> bool:
-        return (time.time() - time_of_cooldown) > cooldown_length * 60
 
     # returns post cooldown if not provided with a member, or the user's reply cooldown otherwise
     def get_remaining_cooldown(self, author: discord.Member = None) -> int:
@@ -128,14 +128,6 @@ class Bot:
 
         return enabled
 
-    def update_setting(self, setting: str, val):
-        settings_file_path = f'guilds/{self.guild_id}/settings.json'
 
-        with open(settings_file_path, 'r') as settings_file:
-            settings_data = json.load(settings_file)
-
-            if setting in settings_data:
-                settings_data[setting] = val
-
-        with open(settings_file_path, 'w') as settings_file:
-            json.dump(settings_data, settings_file, indent=2)
+def cooldown_check(time_of_cooldown, cooldown_length) -> bool:
+    return (time.time() - time_of_cooldown) > cooldown_length * 60
