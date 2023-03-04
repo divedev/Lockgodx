@@ -44,12 +44,21 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    # do not respond to own messages, pins, or other non-user messages
-    if (message.author == client.user) or (message.type != discord.MessageType.default):
+    bot_instance: bot.Bot = bots[message.guild.id]
+
+    # ignore pins and other non-user messages
+    if message.type != discord.MessageType.default:
+        return
+
+    # log message in bot's history for recent conversation context:
+    bot_instance.update_recent_history(message)
+
+    # do not respond to own messages
+    if (message.author == client.user):
         return
 
     # send the message to the bot instance that is present on the guild where the message was sent
-    await bots[message.guild.id].respond(message)
+    await bot_instance.respond(message)
 
 
 # if the main directory doesn't have a 'guilds' directory, create it. if they do have a 'guilds' directory,

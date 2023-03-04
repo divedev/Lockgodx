@@ -21,6 +21,7 @@ class TraitsView(discord.ui.View):
 
         self.guild_id = bot_instance.guild_id
 
+        # TODO: add title for each select menu
         for option_type in TraitsOptionType:
             options = get_options_for_type(self.guild_id, option_type)
             self.add_item(TraitsSelect(option_type, options))
@@ -47,6 +48,7 @@ def get_options_for_type(guild_id: int, option_type: TraitsOptionType) -> list[d
         data = json.load(options_json)
 
         # TODO: convert descriptions to the actual prompt tokens (should find out how many tokens each trait costs)
+        # TODO: impose limits on number of traits via tokens
         for label, description in data.items():
             ret.append(discord.SelectOption(label=label, description=description))
 

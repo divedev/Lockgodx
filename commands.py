@@ -34,10 +34,10 @@ class Commands(commands.Cog, name='Commands'):
     async def set_channel(self, ctx, channel: discord.abc.GuildChannel = None):
         bot = self.bots[ctx.guild.id]
 
-        if channel is None:
-            bot.active_channel_id = ctx.channel.id
-        else:
+        if channel:
             bot.active_channel_id = channel.id
+        else:
+            bot.active_channel_id = ctx.channel.id
 
         active_channel_name = self.client.get_channel(bot.active_channel_id).mention
         await ctx.respond(f'Now active in {active_channel_name}')
