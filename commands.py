@@ -3,26 +3,22 @@ import json
 import discord.abc
 from discord.ext import commands
 
+import bot
 from traits_view import TraitsView
 
 
 def can_ban():
-    async def predicate(ctx):
-        author_roles = ctx.author.roles
-        perms = [role.permissions for role in author_roles]
-        can_ban = False
+    async def predicate(ctx: commands.Context):  # TODO: verify this works
 
-        for perm in perms:
-            if perm.ban_members:
-                can_ban = True
+        perm_check = any((role.permissions.ban_members in role.permissions) for role in ctx.author.roles)
 
-        return can_ban
+        return perm_check
 
     return commands.check(predicate)
 
 
 class Commands(commands.Cog, name='Commands'):
-    def __init__(self, client, bots):
+    def __init__(self, client: discord.Bot, bots: dict[int, bot.Bot]):
         self.client = client
         self.bots = bots
 
@@ -31,7 +27,7 @@ class Commands(commands.Cog, name='Commands'):
         description='Sets the active channel for the bot. Must be specified before bot posts can be made.',
     )
     @can_ban()
-    async def set_channel(self, ctx, channel: discord.abc.GuildChannel = None):
+    async def set_channel(self, ctx: discord.ApplicationContext, channel: discord.abc.GuildChannel = None):
         bot = self.bots[ctx.guild.id]
 
         if channel:
@@ -45,7 +41,7 @@ class Commands(commands.Cog, name='Commands'):
         update_setting(ctx.guild.id, 'channel', bot.active_channel_id)
 
     @set_channel.error
-    async def set_channel_error(self, ctx, error):
+    async def set_channel_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     @commands.slash_command(
@@ -53,23 +49,23 @@ class Commands(commands.Cog, name='Commands'):
         description='Disables the bot from posting or replying'
     )
     @can_ban()
-    async def disable(self, ctx, disable_type: discord.Option(str, choices=['posts', 'replies', 'both']) = None):
+    async def disable(self, ctx: discord.ApplicationContext, disable_type: discord.Option(str, choices=['posts', 'replies', 'both']) = None):
         bot = self.bots[ctx.guild.id]
 
         if disable_type is None:
-            self.bots[ctx.guild.id].posts_enabled = False
-            self.bots[ctx.guild.id].replies_enabled = False
+            bot.posts_enabled = False
+            bot.replies_enabled = False
             await ctx.respond('Posts and replies disabled')
 
             update_setting(ctx.guild.id, 'posts_enabled', False)
             update_setting(ctx.guild.id, 'replies_enabled', False)
         elif disable_type == 'replies':
-            self.bots[ctx.guild.id].replies_enabled = False
+            bot.replies_enabled = False
             await ctx.respond('Replies disabled')
 
             update_setting(ctx.guild.id, 'replies_enabled', False)
         elif disable_type == 'posts':
-            self.bots[ctx.guild.id].posts_enabled = False
+            bot.posts_enabled = False
             await ctx.respond('Posts disabled')
 
             update_setting(ctx.guild.id, 'posts_enabled', False)
@@ -77,7 +73,7 @@ class Commands(commands.Cog, name='Commands'):
             pass
 
     @disable.error
-    async def disable_error(self, ctx, error):
+    async def disable_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     @commands.slash_command(
@@ -85,7 +81,7 @@ class Commands(commands.Cog, name='Commands'):
         description='Enables the bot to post or reply'
     )
     @can_ban()
-    async def enable(self, ctx, enable_type: discord.Option(str, choices=['posts', 'replies', 'both']) = None):
+    async def enable(self, ctx: discord.ApplicationContext, enable_type: discord.Option(str, choices=['posts', 'replies', 'both']) = None):
         bot = self.bots[ctx.guild.id]
 
         if enable_type is None:
@@ -109,15 +105,16 @@ class Commands(commands.Cog, name='Commands'):
             pass
 
     @enable.error
-    async def enable_error(self, ctx, error):
+    async def enable_error(self, ctx: discord.ApplicationContext, error):
         pass
 
+    # TODO: set this and set_reply_cd to the same command, with options
     @commands.slash_command(
         name='set_cd',
         description='Sets the minimum delay between posting, in minutes.'
     )
     @can_ban()
-    async def set_post_cd(self, ctx, minutes_to_wait: float = None):
+    async def set_post_cd(self, ctx: discord.ApplicationContext, minutes_to_wait: float = None):
         bot = self.bots[ctx.guild.id]
 
         if minutes_to_wait is None:
@@ -130,7 +127,7 @@ class Commands(commands.Cog, name='Commands'):
         update_setting(ctx.guild.id, 'post_cd', minutes_to_wait)
 
     @set_post_cd.error
-    async def set_cd_error(self, ctx, error):
+    async def set_cd_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     @commands.slash_command(
@@ -138,7 +135,7 @@ class Commands(commands.Cog, name='Commands'):
         description='Sets the minimum delay between replying, in minutes.'
     )
     @can_ban()
-    async def set_reply_cd(self, ctx, minutes_to_wait: float = None):
+    async def set_reply_cd(self, ctx: discord.ApplicationContext, minutes_to_wait: float = None):
         bot = self.bots[ctx.guild.id]
 
         if minutes_to_wait is None:
@@ -151,7 +148,7 @@ class Commands(commands.Cog, name='Commands'):
         update_setting(ctx.guild.id, 'reply_cd', minutes_to_wait)
 
     @set_reply_cd.error
-    async def set_reply_cd_error(self, ctx, error):
+    async def set_reply_cd_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     @commands.slash_command(
@@ -159,7 +156,7 @@ class Commands(commands.Cog, name='Commands'):
         description='Sets the number of user messages to wait between posting.'
     )
     @can_ban()
-    async def set_msgs_wait(self, ctx, msgs_to_wait: int = None):
+    async def set_msgs_wait(self, ctx: discord.ApplicationContext, msgs_to_wait: int = None):
         bot = self.bots[ctx.guild.id]
 
         if msgs_to_wait is None:
@@ -172,15 +169,15 @@ class Commands(commands.Cog, name='Commands'):
         update_setting(ctx.guild.id, 'msgs_wait', msgs_to_wait)
 
     @set_msgs_wait.error
-    async def set_msgs_wait_error(self, ctx, error):
+    async def set_msgs_wait_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     def get_cd_text(self, ctx: discord.ApplicationContext):
         bot = self.bots[ctx.guild.id]
 
-        post_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown().__str__()
+        post_cd_remaining = bot.get_remaining_cooldown().__str__()
         post_cd = (bot.post_cd * 60).__str__()
-        reply_cd_remaining = self.bots[ctx.guild.id].get_remaining_cooldown(author=ctx.author).__str__()
+        reply_cd_remaining = bot.get_remaining_cooldown(author=ctx.author).__str__()
         reply_cd = (bot.reply_cd * 60).__str__()
 
         post_cd_text = f'Post cd: {post_cd_remaining}s of {post_cd}s'
@@ -192,18 +189,18 @@ class Commands(commands.Cog, name='Commands'):
         name='cd',
         description='Prints the remaining cooldown for posting or replying to mentions'
     )
-    async def cd(self, ctx):
+    async def cd(self, ctx: discord.ApplicationContext):
         await ctx.respond(self.get_cd_text(ctx), ephemeral=True)
 
     @cd.error
-    async def cd_error(self, ctx, error):
+    async def cd_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     @commands.slash_command(
         name='status',
         description='Gives the status of the bot\'s internal parameters'
     )
-    async def status(self, ctx):
+    async def status(self, ctx: discord.ApplicationContext):
         bot = self.bots[ctx.guild.id]
         bot_channel = self.client.get_channel(bot.active_channel_id)
 
@@ -216,7 +213,7 @@ class Commands(commands.Cog, name='Commands'):
         await ctx.respond(embed=embed, ephemeral=True)
 
     @status.error
-    async def status_error(self, ctx, error):
+    async def status_error(self, ctx: discord.ApplicationContext, error):
         pass
 
     @commands.slash_command(

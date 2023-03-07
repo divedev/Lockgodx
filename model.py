@@ -7,14 +7,13 @@ from dotenv import load_dotenv
 
 
 class Model:
-    # TODO: implement prompt builder
     # TODO: implement logit updating
     def __init__(self):
         load_dotenv()
         openai.api_key = os.getenv('OPENAI_TOKEN')
 
-        self.name: str = "idiot"
-        self.traits: list[str] = []  # TODO: get from bot
+        self.name: str = "idiot"  # TODO: store this on a per guild basis
+        self.traits: list[str] = ["unpredictable mood", "cannot spell big words", "inappropriate emotional outbursts"]  # TODO: get from bot
 
     # TODO: make parameters changeable inside discord
     def get_openai_response(self, seed: discord.Message, recent_history: list[discord.Message]) -> str:
@@ -43,19 +42,19 @@ class Model:
                           f"\nRecent history: {history_formatted}" \
                           f"\nSeed Prompt:{seed}" \
                           f"\n{self.name}:"
+        print(estimate_tokens(prompt_template))
         return prompt_template
 
 
 # TODO: we dont need to keep a list at all. probably should just keep self.traits as one string
-def format_traits(traits: list[str]):
+def format_traits(traits: list[str]) -> str:
     return " ".join(f"{trait}, " for trait in traits)[:-2]
 
 
-def format_recent_history(recent_history: list[discord.Message]):
-    l = [f"{msg.author.name} said \"{msg.content}\"" for msg in recent_history]
-    ret: str = " ".join(l)
+def format_recent_history(recent_history: list[discord.Message]) -> str:
+    history_as_list = [f"{msg.author.name} said \"{msg.content}\"" for msg in recent_history]
 
-    return ret
+    return " ".join(history_as_list)
 
 
 # makes a conservative estimate of the number of tokens in text following rules at:

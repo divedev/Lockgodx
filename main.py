@@ -24,9 +24,9 @@ def get_intents() -> discord.Intents:
     return intents
 
 
-client = discord.Bot(intents=get_intents())
+client: discord.Bot = discord.Bot(intents=get_intents())
 
-bots = {}
+bots: dict[int, bot.Bot] = {}
 
 
 @client.event
@@ -43,18 +43,18 @@ async def on_ready():
 
 
 @client.event
-async def on_message(message):
-    bot_instance: bot.Bot = bots[message.guild.id]
-
+async def on_message(message: discord.Message):
     # ignore pins and other non-user messages
     if message.type != discord.MessageType.default:
         return
+
+    bot_instance: bot.Bot = bots[message.guild.id]
 
     # log message in bot's history for recent conversation context:
     bot_instance.update_recent_history(message)
 
     # do not respond to own messages
-    if (message.author == client.user):
+    if message.author == client.user:
         return
 
     # send the message to the bot instance that is present on the guild where the message was sent

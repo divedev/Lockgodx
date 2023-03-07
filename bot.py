@@ -75,8 +75,6 @@ class Bot:
 
             self.start_reply_cd(message.author)
 
-        return
-
     # respond to messages that do not directly mention the bot
     async def post(self, message: discord.Message):
         async with message.channel.typing():
@@ -88,8 +86,7 @@ class Bot:
                 await message.channel.send(output)
                 self.msgs_waited = 0
                 self.start_post_cd()
-            else:
-                pass
+                # TODO: log that no output was created
 
     def generate_response_text(self, message: discord.Message = None) -> str:
         response = self.model.get_openai_response(seed=message, recent_history=self.recent_history)
