@@ -26,7 +26,7 @@ class Bot:
 
         # user-changeable settings. initialize to defaults (for safety) then load any saved values
         self.active_channel_id = ''
-        self.post_cd = 5
+        self.post_cd = 5  # TODO: convert these to datetimes
         self.reply_cd = 5
         self.msgs_wait: int = 10
         self.posts_enabled: bool = True
@@ -127,7 +127,7 @@ class Bot:
         # TODO: add DALL E image generation enabled status
 
         if len(enabled) < 1:
-            enabled = 'none'
+            enabled.append('none')
 
         return enabled
 

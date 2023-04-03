@@ -13,7 +13,7 @@ class Model:
         openai.api_key = os.getenv('OPENAI_TOKEN')
 
         self.name: str = "idiot"  # TODO: store this on a per guild basis
-        self.traits: list[str] = ["unpredictable mood", "cannot spell big words", "inappropriate emotional outbursts"]  # TODO: get from bot
+        self.traits: list[str] = ["unpredictable mood", "low self esteem", "misspell big words"]  # TODO: get from bot
 
     # TODO: make parameters changeable inside discord
     def get_openai_response(self, seed: discord.Message, recent_history: list[discord.Message]) -> str:
