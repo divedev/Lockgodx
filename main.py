@@ -45,7 +45,8 @@ async def on_ready():
 @client.event
 async def on_message(message: discord.Message):
     # ignore pins and other non-user messages
-    if message.type != discord.MessageType.default:
+    type = message.type
+    if message.type.name != 'default' and message.type.name != 'reply':
         return
 
     bot_instance: bot.Bot = bots[message.guild.id]

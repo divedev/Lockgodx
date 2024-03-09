@@ -71,7 +71,8 @@ class Bot:
         # check if there is an outstanding cooldown for the user
         if cooldown_check(self.user_reply_times.get(message.author.id, 0), self.reply_cd):
             async with message.channel.typing():
-                await message.reply(self.generate_response_text(message=message))
+                reply_text = self.generate_response_text(message=message)
+                await message.reply(reply_text)
 
             self.start_reply_cd(message.author)
 

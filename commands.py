@@ -1,4 +1,6 @@
 import json
+import sys
+import traceback
 
 import discord.abc
 from discord.ext import commands
@@ -10,7 +12,7 @@ from traits_view import TraitsView
 def can_ban():
     async def predicate(ctx: commands.Context):  # TODO: verify this works
 
-        perm_check = any((role.permissions.ban_members in role.permissions) for role in ctx.author.roles)
+        perm_check = ctx.author.guild_permissions.ban_members
 
         return perm_check
 
@@ -42,7 +44,8 @@ class Commands(commands.Cog, name='Commands'):
 
     @set_channel.error
     async def set_channel_error(self, ctx: discord.ApplicationContext, error):
-        pass
+        print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+        traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
     @commands.slash_command(
         name='disable',
