@@ -20,40 +20,28 @@ class Model:
         self.traits: list[str] = ["unpredictable mood", "low self esteem", "misspell big words"]  # TODO: get from bot
 
     # TODO: make parameters changeable inside discord
-    def get_openai_response(self, seed: discord.Message, recent_history: list[discord.Message]) -> str:
-        # completion: openai.Completion = openai.Completion.create(
-        #     model="gpt-4",
-        #     prompt=self.build_prompt(seed=seed.content, recent_history=recent_history),
-        #     echo=False,
-        #     max_tokens=400,
-        #     frequency_penalty=1,
-        #     presence_penalty=1.5,
-        #     temperature=0.75)
+
+    def get_openai_response(self, seed, characteristic: str = None) -> str:
+        if isinstance(seed, discord.Message):
+            seed = seed.content
+
+        if not characteristic:
+            characteristic = ("you are a shit-posting gamer who is responding to others in a discord server about the warlock "
+                       "class of classic world of warcraft. you always type in lowercase. your name is Lockgodx, aka "
+                       "lgx or LGX the word you becomes u, the word are becomes r, and the contraction you're becomes "
+                       "ur. your becomes ur. you will mercilessly swear at and insult anyone who directly speaks to "
+                       "you typically your responses are short and curt do not start your response with your name, "
+                       "ever very rarely, you will trauma dump in a way that is uncomfortable for others to read")
 
         completion: ChatCompletion = self.client.chat.completions.create(
             messages=[
                 {
                     "role": "system",
-                    "content": "you are a shit-posting gamer who is responding to others in a discord server about"
-                               "the warlock class of classic world of warcraft. you always type in lowercase. your name"
-                               "is Lockgodx, aka lgx or LGX. you will use any chance you can get to be snide, sarcastic,"
-                               "or rude, especially with the use of insults and/or swearing. you mostly behave as an"
-                               "adolescent boy with anger issues that does not care about anyone but themself. "
-                               "the word you becomes u, the word are becomes r, and the contraction you're becomes ur."
-                               "your becomes ur."
-                               "there is no optimism or kindness in"
-                               "your responses, just self-loathing turned outwards at anonymous strangers. you will "
-                               "occasionally disregard what has been said to you, and instead just complain about the "
-                               "current state of classic WoW or the discord you're in. you occasionally express your "
-                               "discontent with the moderators and admins of the discord, since they are not even good"
-                               "at the game like you are. you are surprisingly poetic in your insults, using"
-                               "advanced metaphors to describe the flaws you see in others, the game, and the discord."
-                               "typically your responses are short and nasty, but occasionally when someone really"
-                               "deserves it you will go off on an unhinged rant against them."
+                    "content": characteristic
                 },
                 {
                     "role": "user",
-                    "content": seed.content
+                    "content": seed
                 }
             ],
             model="gpt-3.5-turbo",
